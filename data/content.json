@@ -1,0 +1,91 @@
+{
+  "site": {
+    "title": "Portfolio",
+    "lang": "es",
+    "theme": "dark"
+  },
+  "sections": [
+    { "id": "inicio", "label": "Inicio", "type": "hero" },
+    { "id": "sobre-mi", "label": "Sobre mí", "type": "about" },
+    { "id": "cv", "label": "Hoja de vida", "type": "cv" },
+    { "id": "proyectos", "label": "Proyectos", "type": "projects" },
+    { "id": "habilidades", "label": "Habilidades", "type": "skills" },
+    { "id": "contacto", "label": "Contacto", "type": "contact" }
+  ],
+  "profile": {
+    "name": "Tu Nombre",
+    "role": "Desarrollador/a",
+    "tagline": "Breve frase profesional que resuma tu valor y enfoque.",
+    "photo": "",
+    "location": "",
+    "summary": [
+      "Párrafo breve sobre ti: qué haces, qué te interesa y qué buscas profesionalmente.",
+      "Segundo párrafo opcional con información adicional relevante."
+    ],
+    "highlights": [
+      "Logro o característica destacada 1",
+      "Logro o característica destacada 2",
+      "Logro o característica destacada 3"
+    ]
+  },
+  "experience": [
+    {
+      "role": "Rol o cargo",
+      "company": "Empresa o proyecto",
+      "period": "MES AAAA – MES AAAA",
+      "summary": "Descripción breve de responsabilidades y logros.",
+      "tech": ["Tecnología 1", "Tecnología 2"]
+    },
+    {
+      "role": "Rol o cargo",
+      "company": "Empresa o proyecto",
+      "period": "MES AAAA – MES AAAA",
+      "summary": "Descripción breve de responsabilidades y logros.",
+      "tech": ["Tecnología 1", "Tecnología 2"]
+    }
+  ],
+  "education": [
+    {
+      "degree": "Título o grado",
+      "institution": "Institución",
+      "period": "AAAA – AAAA",
+      "notes": "Nota opcional (menciones, enfoque, etc.)"
+    }
+  ],
+  "projects": [
+    {
+      "title": "Nombre del proyecto",
+      "description": "Descripción breve del proyecto y su propósito.",
+      "tech": ["HTML", "CSS", "JavaScript"],
+      "repo": "",
+      "demo": ""
+    },
+    {
+      "title": "Nombre del proyecto",
+      "description": "Descripción breve del proyecto y su propósito.",
+      "tech": ["HTML", "CSS", "JavaScript"],
+      "repo": "",
+      "demo": ""
+    }
+  ],
+  "skills": [
+    {
+      "category": "Categoría (ej. Frontend)",
+      "items": ["Habilidad 1", "Habilidad 2", "Habilidad 3"]
+    },
+    {
+      "category": "Categoría (ej. Backend)",
+      "items": ["Habilidad 1", "Habilidad 2", "Habilidad 3"]
+    }
+  ],
+  "contact": {
+    "email": "tucorreo@ejemplo.com",
+    "github": "",
+    "linkedin": "",
+    "website": "",
+    "message": "Texto breve invitando a contactarte para oportunidades profesionales."
+  },
+  "footer": {
+    "text": "© AAAA Tu Nombre. Todos los derechos reservados."
+  }
+}
