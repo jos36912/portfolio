@@ -27,10 +27,11 @@ data/content.json  Fuente única de contenido estructurado.
 index.html         Esqueleto mínimo del sitio.
 script.js          Carga content.json y renderiza el sitio.
 style.css          Estilos y tema oscuro.
-admin.html         Panel de administración (login + panel).
-admin.js           Lógica de sesión y login con Supabase.
-admin.css          Estilos del panel de administración.
-supabase-config.js Configuración del proyecto Supabase (URL + anon key).
+admin/             Panel de administración (login + panel), en carpeta separada.
+admin/index.html   Página del panel (se accede en /admin/).
+admin/admin.js     Lógica de sesión y login con Supabase.
+admin/admin.css    Estilos del panel de administración.
+admin/supabase-config.js  Configuración del proyecto Supabase (URL + anon key).
 ```
 
 ## Tecnologías
@@ -42,7 +43,7 @@ supabase-config.js Configuración del proyecto Supabase (URL + anon key).
 
 ## Panel de administración
 
-El panel está en `admin.html` y solo permite entrar con una sesión válida de Supabase (correo + contraseña).
+El panel está en la carpeta `admin/` (se accede en `/admin/`) y solo permite entrar con una sesión válida de Supabase (correo + contraseña). Se comunica con los recursos compartidos mediante rutas relativas (`../`).
 
 ### Configuración en Supabase
 
