@@ -346,6 +346,19 @@ a:hover {
   font-size: 0.9rem;
 }
 
+.footer-text {
+  margin-bottom: 8px;
+}
+
+.footer-admin {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.footer-admin:hover {
+  color: var(--accent);
+}
+
 .error {
   max-width: var(--max-width);
   margin: 80px auto;

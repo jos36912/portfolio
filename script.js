@@ -224,6 +224,13 @@ function renderContact(sec, contact) {
 function renderFooter(footer) {
   const footerNode = el('footer', 'site-footer');
   footerNode.appendChild(el('p', 'footer-text', footer.text));
+
+  if (footer.admin) {
+    const link = el('a', 'footer-admin', footer.admin.label);
+    link.href = footer.admin.url;
+    footerNode.appendChild(link);
+  }
+
   document.body.appendChild(footerNode);
 }
 
