@@ -6,7 +6,7 @@ const loginSubmit = document.getElementById('login-submit');
 const panelEmail = document.getElementById('panel-email');
 const logoutButton = document.getElementById('logout');
 
-let supabase = null;
+let supabaseClient = null;
 
 function showView(name) {
   viewLogin.classList.toggle('hidden', name !== 'login');
@@ -22,7 +22,7 @@ function initSupabase() {
   if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
     return false;
   }
-  supabase = window.supabase.createClient(
+  supabaseClient = window.supabase.createClient(
     CONFIG.SUPABASE_URL,
     CONFIG.SUPABASE_ANON_KEY
   );
@@ -42,7 +42,7 @@ loginForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   loginError.hidden = true;
 
-  if (!supabase) {
+  if (!supabaseClient) {
     setLoginError('Supabase no está disponible. Recarga la página o revisa la conexión.');
     return;
   }
@@ -53,7 +53,7 @@ loginForm.addEventListener('submit', async (event) => {
   loginSubmit.disabled = true;
   loginSubmit.textContent = 'Ingresando...';
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
   loginSubmit.disabled = false;
   loginSubmit.textContent = 'Iniciar sesión';
@@ -64,7 +64,7 @@ loginForm.addEventListener('submit', async (event) => {
 });
 
 logoutButton.addEventListener('click', () => {
-  if (supabase) supabase.auth.signOut();
+  if (supabaseClient) supabaseClient.auth.signOut();
 });
 
 document.querySelectorAll('.panel-nav a').forEach((link) => {
@@ -83,11 +83,11 @@ showView('login');
 if (!initSupabase()) {
   setLoginError('No se pudo cargar el cliente de Supabase. Recarga la página.');
 } else {
-  supabase.auth
+  supabaseClient.auth
     .getSession()
     .then(({ data }) => handleSession(data.session))
     .catch(() => {});
-  supabase.auth.onAuthStateChange((_event, session) => {
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
     handleSession(session);
   });
 }
