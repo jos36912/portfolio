@@ -221,19 +221,6 @@ function renderContact(sec, contact) {
   sec.appendChild(inner);
 }
 
-function renderFooter(footer) {
-  const footerNode = el('footer', 'site-footer');
-  footerNode.appendChild(el('p', 'footer-text', footer.text));
-
-  if (footer.admin) {
-    const link = el('a', 'footer-admin', footer.admin.label);
-    link.href = footer.admin.url;
-    footerNode.appendChild(link);
-  }
-
-  document.body.appendChild(footerNode);
-}
-
 function render(data) {
   document.documentElement.lang = data.site.lang || 'es';
   document.title = data.site.title || 'Portfolio';
@@ -270,7 +257,6 @@ function render(data) {
     app.appendChild(sec);
   });
 
-  renderFooter(data.footer);
   setupActiveNav(data.sections);
 }
 

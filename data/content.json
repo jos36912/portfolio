@@ -84,12 +84,5 @@
     "linkedin": "",
     "website": "",
     "message": "Texto breve invitando a contactarte para oportunidades profesionales."
-  },
-  "footer": {
-    "text": "© AAAA Tu Nombre. Todos los derechos reservados.",
-    "admin": {
-      "label": "Iniciar sesión",
-      "url": "admin/"
-    }
   }
 }
