@@ -1,5 +1,20 @@
 const DATA_URL = 'data/content.json';
 
+const DEFAULT_SITE = {
+  title: 'Portfolio',
+  lang: 'es',
+  theme: 'dark'
+};
+
+const DEFAULT_SECTIONS = [
+  { id: 'inicio', label: 'Inicio', type: 'hero' },
+  { id: 'sobre-mi', label: 'Sobre mí', type: 'about' },
+  { id: 'cv', label: 'Hoja de vida', type: 'cv' },
+  { id: 'proyectos', label: 'Proyectos', type: 'projects' },
+  { id: 'habilidades', label: 'Habilidades', type: 'skills' },
+  { id: 'contacto', label: 'Contacto', type: 'contact' }
+];
+
 const app = document.getElementById('app');
 
 function escapeHtml(value) {
@@ -229,7 +244,8 @@ function render(data) {
 
   data.sections.forEach((section) => {
     const sec = createSection(section);
-    const content = data[section.type === 'hero' ? 'profile' : section.type];
+    const content =
+      data[section.type === 'hero' || section.type === 'about' ? 'profile' : section.type];
 
     switch (section.type) {
       case 'hero':
@@ -282,11 +298,60 @@ function setupActiveNav(sections) {
   });
 }
 
+async function fetchSupabaseTable(table, single) {
+  const config = window.CONFIG;
+  const url = config.SUPABASE_URL + '/rest/v1/' + table + '?select=*';
+  const headers = {
+    apikey: config.SUPABASE_ANON_KEY,
+    Authorization: 'Bearer ' + config.SUPABASE_ANON_KEY
+  };
+  const response = await fetch(url, { headers });
+  if (!response.ok) throw new Error(table + ': HTTP ' + response.status);
+  const rows = await response.json();
+  return single ? rows[0] : rows;
+}
+
+function normalizeContent(data) {
+  return {
+    site: DEFAULT_SITE,
+    sections: DEFAULT_SECTIONS,
+    profile: data.profile || {},
+    experience: data.experience || [],
+    education: data.education || [],
+    projects: data.projects || [],
+    skills: data.skills || [],
+    contact: data.contact || {}
+  };
+}
+
+async function loadSupabaseContent() {
+  const [profile, experience, education, projects, skills, contact] = await Promise.all([
+    fetchSupabaseTable('profile', true),
+    fetchSupabaseTable('experience'),
+    fetchSupabaseTable('education'),
+    fetchSupabaseTable('projects'),
+    fetchSupabaseTable('skills'),
+    fetchSupabaseTable('contact', true)
+  ]);
+  return normalizeContent({ profile, experience, education, projects, skills, contact });
+}
+
+async function loadContent() {
+  if (window.CONFIG && window.CONFIG.SUPABASE_URL) {
+    try {
+      return await loadSupabaseContent();
+    } catch (error) {
+      console.warn('Supabase no disponible, usando content.json:', error.message);
+    }
+  }
+  const response = await fetch(DATA_URL);
+  if (!response.ok) throw new Error('HTTP ' + response.status);
+  return response.json();
+}
+
 (async function init() {
   try {
-    const response = await fetch(DATA_URL);
-    if (!response.ok) throw new Error('HTTP ' + response.status);
-    const data = await response.json();
+    const data = await loadContent();
     render(data);
   } catch (error) {
     const message = el('section', 'error');

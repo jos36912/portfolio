@@ -160,6 +160,48 @@
   color: var(--text-muted);
 }
 
+.module-form {
+  max-width: 560px;
+  display: grid;
+  gap: 8px;
+}
+
+.module-label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-top: 12px;
+}
+
+.module-input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font: inherit;
+  resize: vertical;
+}
+
+.module-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.module-actions {
+  margin-top: 20px;
+}
+
+.module-feedback {
+  margin-top: 12px;
+  font-size: 0.9rem;
+  color: #6ee7a0;
+}
+
+.module-feedback--error {
+  color: #f87171;
+}
+
 @media (max-width: 700px) {
   .panel-body {
     grid-template-columns: 1fr;
