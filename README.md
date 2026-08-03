@@ -10,12 +10,13 @@ La idea central es que el sitio público consuma una fuente estructurada de dato
 - Tema oscuro, limpio y responsive.
 - Contenido 100% manejado desde `data/content.json`.
 - Favicon propio (`assets/darkness.ico`).
+- Panel de administración con inicio de sesión protegido (Supabase Auth).
 - Compatible con dispositivos móviles y escritorio.
 
 ## Próximas mejoras (futuras versiones)
 
-- **Panel de administración** en la web para gestionar el contenido (perfil, experiencia, educación, proyectos, habilidades, contacto).
-- Autenticación real cuando exista una arquitectura clara.
+- Módulos del panel de administración (perfil, experiencia, educación, proyectos, habilidades, contacto).
+- Persistencia del contenido en Supabase y migración del sitio público a consumir la API.
 - Soporte para subir imágenes y documentos desde el panel.
 
 ## Estructura del proyecto
@@ -26,6 +27,10 @@ data/content.json  Fuente única de contenido estructurado.
 index.html         Esqueleto mínimo del sitio.
 script.js          Carga content.json y renderiza el sitio.
 style.css          Estilos y tema oscuro.
+admin.html         Panel de administración (login + panel).
+admin.js           Lógica de sesión y login con Supabase.
+admin.css          Estilos del panel de administración.
+supabase-config.js Configuración del proyecto Supabase (URL + anon key).
 ```
 
 ## Tecnologías
@@ -33,6 +38,20 @@ style.css          Estilos y tema oscuro.
 - HTML5
 - CSS3
 - JavaScript
+- Supabase (Auth y, próximamente, base de datos)
+
+## Panel de administración
+
+El panel está en `admin.html` y solo permite entrar con una sesión válida de Supabase (correo + contraseña).
+
+### Configuración en Supabase
+
+1. Crear un proyecto en [supabase.com](https://supabase.com) y copiar el *Project URL* y la *anon public key* en `supabase-config.js`.
+2. En **Authentication → Providers → Email**: habilitar el inicio de sesión con correo y contraseña.
+3. Crear tu usuario en **Auth → Users** con tu correo.
+4. Desactivar el sign-up público para que solo tú puedas registrarte/entrar.
+
+La `anon key` es pública por diseño y es segura para el navegador. La `service_role key` jamás debe usarse en el cliente.
 
 ## Instalación / Uso local
 

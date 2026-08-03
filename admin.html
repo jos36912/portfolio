@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de administración</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/x-icon" href="assets/darkness.ico">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <div id="view-login" class="view view--login hidden">
+    <form id="login-form" class="login-card">
+      <img src="assets/darkness.ico" alt="Logo" class="login-logo">
+      <h1>Panel de administración</h1>
+
+      <label for="login-email">Correo</label>
+      <input type="email" id="login-email" name="email" required autocomplete="email">
+
+      <label for="login-password">Contraseña</label>
+      <input type="password" id="login-password" name="password" required autocomplete="current-password">
+
+      <p id="login-error" class="login-error" hidden></p>
+
+      <button type="submit" id="login-submit">Iniciar sesión</button>
+    </form>
+  </div>
+
+  <div id="view-panel" class="view view--panel hidden">
+    <header class="panel-header">
+      <strong>Panel de administración</strong>
+      <div class="panel-user">
+        <span id="panel-email"></span>
+        <button id="logout" class="btn btn--small btn--secondary">Cerrar sesión</button>
+      </div>
+    </header>
+
+    <div class="panel-body">
+      <aside class="panel-nav">
+        <nav>
+          <ul>
+            <li><a href="#" data-view="perfil" class="active">Perfil</a></li>
+            <li><a href="#" data-view="experiencia">Experiencia</a></li>
+            <li><a href="#" data-view="educacion">Educación</a></li>
+            <li><a href="#" data-view="proyectos">Proyectos</a></li>
+            <li><a href="#" data-view="habilidades">Habilidades</a></li>
+            <li><a href="#" data-view="contacto">Contacto</a></li>
+          </ul>
+        </nav>
+      </aside>
+
+      <main class="panel-content">
+        <h2 id="panel-title" class="placeholder">Perfil</h2>
+        <p class="placeholder-text">Módulo próximamente disponible.</p>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
