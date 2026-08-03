@@ -1,8 +1,3 @@
-const supabase = window.supabase.createClient(
-  CONFIG.SUPABASE_URL,
-  CONFIG.SUPABASE_ANON_KEY
-);
-
 const viewLogin = document.getElementById('view-login');
 const viewPanel = document.getElementById('view-panel');
 const loginForm = document.getElementById('login-form');
@@ -11,9 +6,27 @@ const loginSubmit = document.getElementById('login-submit');
 const panelEmail = document.getElementById('panel-email');
 const logoutButton = document.getElementById('logout');
 
+let supabase = null;
+
 function showView(name) {
   viewLogin.classList.toggle('hidden', name !== 'login');
   viewPanel.classList.toggle('hidden', name !== 'panel');
+}
+
+function setLoginError(message) {
+  loginError.textContent = message;
+  loginError.hidden = false;
+}
+
+function initSupabase() {
+  if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
+    return false;
+  }
+  supabase = window.supabase.createClient(
+    CONFIG.SUPABASE_URL,
+    CONFIG.SUPABASE_ANON_KEY
+  );
+  return true;
 }
 
 function handleSession(session) {
@@ -29,6 +42,11 @@ loginForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   loginError.hidden = true;
 
+  if (!supabase) {
+    setLoginError('Supabase no está disponible. Recarga la página o revisa la conexión.');
+    return;
+  }
+
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
 
@@ -41,13 +59,12 @@ loginForm.addEventListener('submit', async (event) => {
   loginSubmit.textContent = 'Iniciar sesión';
 
   if (error) {
-    loginError.textContent = error.message;
-    loginError.hidden = false;
+    setLoginError(error.message);
   }
 });
 
 logoutButton.addEventListener('click', () => {
-  supabase.auth.signOut();
+  if (supabase) supabase.auth.signOut();
 });
 
 document.querySelectorAll('.panel-nav a').forEach((link) => {
@@ -61,10 +78,16 @@ document.querySelectorAll('.panel-nav a').forEach((link) => {
   });
 });
 
-supabase.auth.getSession().then(({ data }) => {
-  handleSession(data.session);
-});
+showView('login');
 
-supabase.auth.onAuthStateChange((_event, session) => {
-  handleSession(session);
-});
+if (!initSupabase()) {
+  setLoginError('No se pudo cargar el cliente de Supabase. Recarga la página.');
+} else {
+  supabase.auth
+    .getSession()
+    .then(({ data }) => handleSession(data.session))
+    .catch(() => {});
+  supabase.auth.onAuthStateChange((_event, session) => {
+    handleSession(session);
+  });
+}

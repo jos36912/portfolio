@@ -22,7 +22,7 @@ La idea central es que el sitio público consuma una fuente estructurada de dato
 ## Estructura del proyecto
 
 ```
-assets/            Recursos estáticos (favicon, imágenes).
+assets/            Recursos estáticos (favicon, imágenes, vendor).
 data/content.json  Fuente única de contenido estructurado.
 index.html         Esqueleto mínimo del sitio.
 script.js          Carga content.json y renderiza el sitio.
