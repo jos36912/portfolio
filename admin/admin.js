@@ -33,15 +33,84 @@ const MODULE_LABELS = {
 };
 
 const MODULES = {
+  perfil: {
+    type: 'form',
+    table: 'profile',
+    itemLabel: 'Perfil',
+    fields: [
+      ['name', 'Nombre', 'text'],
+      ['role', 'Rol', 'text'],
+      ['tagline', 'Tagline', 'text'],
+      ['photo', 'Foto (URL)', 'text'],
+      ['location', 'Ubicación', 'text'],
+      ['summary', 'Resumen (una línea por párrafo)', 'list'],
+      ['highlights', 'Destacados (una línea por ítem)', 'list']
+    ]
+  },
+  contacto: {
+    type: 'form',
+    table: 'contact',
+    itemLabel: 'Contacto',
+    fields: [
+      ['email', 'Correo', 'text'],
+      ['github', 'GitHub (URL)', 'text'],
+      ['linkedin', 'LinkedIn (URL)', 'text'],
+      ['website', 'Sitio web (URL)', 'text'],
+      ['message', 'Mensaje de presentación', 'textarea']
+    ]
+  },
   experiencia: {
+    type: 'list',
     table: 'experience',
     itemLabel: 'Experiencia',
+    titleFields: ['role', 'company'],
+    metaFields: ['period'],
+    tagsField: 'tech',
     fields: [
       ['role', 'Rol', 'text'],
       ['company', 'Empresa', 'text'],
       ['period', 'Período', 'text'],
       ['summary', 'Resumen', 'textarea'],
       ['tech', 'Tecnologías (una por línea)', 'list']
+    ]
+  },
+  educacion: {
+    type: 'list',
+    table: 'education',
+    itemLabel: 'Educación',
+    titleFields: ['degree', 'institution'],
+    metaFields: ['period'],
+    fields: [
+      ['degree', 'Título o grado', 'text'],
+      ['institution', 'Institución', 'text'],
+      ['period', 'Período', 'text'],
+      ['notes', 'Notas', 'textarea']
+    ]
+  },
+  proyectos: {
+    type: 'list',
+    table: 'projects',
+    itemLabel: 'Proyectos',
+    titleFields: ['title'],
+    metaFields: ['demo', 'repo'],
+    tagsField: 'tech',
+    fields: [
+      ['title', 'Nombre', 'text'],
+      ['description', 'Descripción', 'textarea'],
+      ['tech', 'Tecnologías (una por línea)', 'list'],
+      ['repo', 'Repositorio (URL)', 'text'],
+      ['demo', 'Demo (URL)', 'text']
+    ]
+  },
+  habilidades: {
+    type: 'list',
+    table: 'skills',
+    itemLabel: 'Habilidades',
+    titleFields: ['category'],
+    tagsField: 'items',
+    fields: [
+      ['category', 'Categoría', 'text'],
+      ['items', 'Habilidades (una por línea)', 'list']
     ]
   }
 };
@@ -65,16 +134,20 @@ function renderModule(name) {
   view.innerHTML = '';
   title.textContent = MODULE_LABELS[name] || name;
 
-  if (name === 'perfil') {
-    renderPerfilModule(view);
-  } else if (MODULES[name]) {
-    renderListModule(view, MODULES[name]);
-  } else {
+  const def = MODULES[name];
+  if (!def) {
     view.appendChild(el('p', 'placeholder-text', 'Módulo próximamente disponible.'));
+    return;
+  }
+
+  if (def.type === 'form') {
+    renderFormModule(view, def);
+  } else {
+    renderListModule(view, def);
   }
 }
 
-function renderPerfilModule(view) {
+function renderFormModule(view, def) {
   if (!supabaseClient) {
     view.appendChild(el('p', 'module-feedback module-feedback--error', 'Supabase no está disponible.'));
     return;
@@ -83,24 +156,14 @@ function renderPerfilModule(view) {
   const form = el('form', 'module-form');
   const inputs = {};
 
-  const fields = [
-    ['name', 'Nombre', 'text'],
-    ['role', 'Rol', 'text'],
-    ['tagline', 'Tagline', 'text'],
-    ['photo', 'Foto (URL)', 'text'],
-    ['location', 'Ubicación', 'text'],
-    ['summary', 'Resumen (una línea por párrafo)', 'textarea'],
-    ['highlights', 'Destacados (una línea por ítem)', 'textarea']
-  ];
-
-  fields.forEach(([key, label, type]) => {
+  def.fields.forEach(([key, label, type]) => {
     form.appendChild(el('label', 'module-label', label));
-    const input = el(type === 'textarea' ? 'textarea' : 'input');
+    const input = el(type === 'textarea' || type === 'list' ? 'textarea' : 'input');
     input.name = key;
-    input.id = 'profile-' + key;
+    input.id = def.table + '-' + key;
     input.className = 'module-input';
     if (type === 'text') input.type = 'text';
-    if (type === 'textarea') input.rows = 4;
+    if (type === 'textarea' || type === 'list') input.rows = 4;
     form.appendChild(input);
     inputs[key] = input;
   });
@@ -116,22 +179,19 @@ function renderPerfilModule(view) {
   view.appendChild(form);
 
   supabaseClient
-    .from('profile')
+    .from(def.table)
     .select('*')
     .maybeSingle()
     .then(({ data, error }) => {
       if (error) {
-        showFeedback(feedback, 'No se pudo cargar el perfil. ¿Ejecutaste supabase/schema.sql?', true);
+        showFeedback(feedback, 'No se pudo cargar el ' + def.itemLabel.toLowerCase() + '. ¿Ejecutaste supabase/schema.sql?', true);
         return;
       }
       if (data) {
-        inputs.name.value = data.name || '';
-        inputs.role.value = data.role || '';
-        inputs.tagline.value = data.tagline || '';
-        inputs.photo.value = data.photo || '';
-        inputs.location.value = data.location || '';
-        inputs.summary.value = (data.summary || []).join('\n');
-        inputs.highlights.value = (data.highlights || []).join('\n');
+        def.fields.forEach(([key, _label, type]) => {
+          const value = data[key];
+          inputs[key].value = type === 'list' ? (value || []).join('\n') : (value || '');
+        });
       }
     });
 
@@ -139,21 +199,15 @@ function renderPerfilModule(view) {
     event.preventDefault();
     feedback.hidden = true;
 
-    const payload = {
-      id: 1,
-      name: inputs.name.value.trim(),
-      role: inputs.role.value.trim(),
-      tagline: inputs.tagline.value.trim(),
-      photo: inputs.photo.value.trim(),
-      location: inputs.location.value.trim(),
-      summary: splitLines(inputs.summary.value),
-      highlights: splitLines(inputs.highlights.value)
-    };
+    const payload = { id: 1 };
+    def.fields.forEach(([key, _label, type]) => {
+      payload[key] = fieldValue(inputs[key], type);
+    });
 
     submit.disabled = true;
     submit.textContent = 'Guardando...';
 
-    const { error } = await supabaseClient.from('profile').upsert(payload);
+    const { error } = await supabaseClient.from(def.table).upsert(payload);
 
     submit.disabled = false;
     submit.textContent = 'Guardar cambios';
@@ -161,7 +215,7 @@ function renderPerfilModule(view) {
     if (error) {
       showFeedback(feedback, 'Error al guardar: ' + error.message, true);
     } else {
-      showFeedback(feedback, 'Perfil guardado correctamente.');
+      showFeedback(feedback, def.itemLabel + ' guardado correctamente.');
     }
   });
 }
@@ -214,18 +268,21 @@ function renderListModule(view, def) {
 function buildItemCard(view, row, def) {
   const card = el('article', 'module-item');
 
-  const titleParts = [];
-  if (row.role) titleParts.push(row.role);
-  if (row.company) titleParts.push(row.company);
+  const titleParts = (def.titleFields || [])
+    .map((key) => row[key])
+    .filter(Boolean);
   card.appendChild(el('h3', 'module-item-title', titleParts.join(' · ') || 'Sin título'));
 
-  if (row.period) {
-    card.appendChild(el('p', 'module-item-meta', row.period));
+  const metaParts = (def.metaFields || [])
+    .map((key) => row[key])
+    .filter(Boolean);
+  if (metaParts.length) {
+    card.appendChild(el('p', 'module-item-meta', metaParts.join(' · ')));
   }
 
-  if (row.tech && row.tech.length) {
+  if (def.tagsField && row[def.tagsField] && row[def.tagsField].length) {
     const tags = el('div', 'module-tags');
-    row.tech.forEach((tech) => tags.appendChild(el('span', 'module-tag', tech)));
+    row[def.tagsField].forEach((tag) => tags.appendChild(el('span', 'module-tag', tag)));
     card.appendChild(tags);
   }
 

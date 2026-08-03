@@ -8,13 +8,13 @@ Una web personal profesional de una sola página, con diseño oscuro y contenido
 - Tema oscuro, limpio y responsive.
 - Contenido persistido en **Supabase** (base de datos con RLS) con respaldo en `data/content.json`.
 - Panel de administración con inicio de sesión protegido (Supabase Auth).
-- Módulo **Perfil** funcional en el panel (editar nombre, rol, tagline, foto, ubicación, resumen y destacados).
+- Módulos del panel completos: **Perfil**, **Experiencia**, **Educación**, **Proyectos**, **Habilidades** y **Contacto** (crear, editar y eliminar).
+- Script `sync-content.py` para regenerar `data/content.json` desde Supabase.
 - Favicon propio (`assets/darkness.ico`).
 - Compatible con dispositivos móviles y escritorio.
 
 ## Próximas mejoras (futuras versiones)
 
-- Módulos del panel: experiencia, educación, proyectos, habilidades y contacto.
 - Soporte para subir imágenes y documentos desde el panel.
 
 ## Estructura del proyecto
@@ -27,6 +27,7 @@ script.js          Carga el contenido (Supabase → fallback content.json) y ren
 style.css          Estilos y tema oscuro.
 supabase-config.js Configuración compartida de Supabase (URL + anon key).
 supabase/schema.sql  Esquema de la base de datos (tablas, RLS y datos iniciales).
+sync-content.py      Regenera data/content.json con los datos actuales de Supabase.
 admin/             Panel de administración (login + panel), en carpeta separada.
 admin/index.html   Página del panel (se accede en /admin/).
 admin/admin.js     Lógica de sesión, login y módulos del panel.
@@ -72,3 +73,11 @@ Luego abre `http://localhost:8000` en tu navegador.
 ## Cómo se administra el contenido
 
 El contenido se edita desde el panel (`/admin/`) y se guarda en Supabase. El sitio público intenta leer de Supabase y, si no está disponible, usa `data/content.json` como respaldo.
+
+Para que el respaldo refleje los últimos cambios del panel, regenera `content.json` desde Supabase antes de hacer commit:
+
+```bash
+python3 sync-content.py
+```
+
+El script lee las 6 tablas (profile, experience, education, projects, skills, contact) con la anon key de `supabase-config.js` y conserva las secciones estáticas (`site` y `sections`).

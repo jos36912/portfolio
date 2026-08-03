@@ -5,17 +5,42 @@
     "theme": "dark"
   },
   "sections": [
-    { "id": "inicio", "label": "Inicio", "type": "hero" },
-    { "id": "sobre-mi", "label": "Sobre mí", "type": "about" },
-    { "id": "cv", "label": "Hoja de vida", "type": "cv" },
-    { "id": "proyectos", "label": "Proyectos", "type": "projects" },
-    { "id": "habilidades", "label": "Habilidades", "type": "skills" },
-    { "id": "contacto", "label": "Contacto", "type": "contact" }
+    {
+      "id": "inicio",
+      "label": "Inicio",
+      "type": "hero"
+    },
+    {
+      "id": "sobre-mi",
+      "label": "Sobre mí",
+      "type": "about"
+    },
+    {
+      "id": "cv",
+      "label": "Hoja de vida",
+      "type": "cv"
+    },
+    {
+      "id": "proyectos",
+      "label": "Proyectos",
+      "type": "projects"
+    },
+    {
+      "id": "habilidades",
+      "label": "Habilidades",
+      "type": "skills"
+    },
+    {
+      "id": "contacto",
+      "label": "Contacto",
+      "type": "contact"
+    }
   ],
   "profile": {
-    "name": "Tu Nombre",
-    "role": "Desarrollador/a",
-    "tagline": "Breve frase profesional que resuma tu valor y enfoque.",
+    "id": 1,
+    "name": "Jeyson Jarquin Salgado",
+    "role": "Entusiasta a Cirberseguridad y desarrollo en python.",
+    "tagline": "VBreve frase profesional que resuma tu valor y enfoque.",
     "photo": "",
     "location": "",
     "summary": [
@@ -30,22 +55,20 @@
   },
   "experience": [
     {
-      "role": "Rol o cargo",
-      "company": "Empresa o proyecto",
-      "period": "MES AAAA – MES AAAA",
+      "id": 1,
+      "role": "Operario de produción",
+      "company": "American Tropic Foods ATF S.A",
+      "period": "12/18/2025 - 03/08/2026",
       "summary": "Descripción breve de responsabilidades y logros.",
-      "tech": ["Tecnología 1", "Tecnología 2"]
-    },
-    {
-      "role": "Rol o cargo",
-      "company": "Empresa o proyecto",
-      "period": "MES AAAA – MES AAAA",
-      "summary": "Descripción breve de responsabilidades y logros.",
-      "tech": ["Tecnología 1", "Tecnología 2"]
+      "tech": [
+        "Tecnología 1",
+        "Tecnología 2"
+      ]
     }
   ],
   "education": [
     {
+      "id": 1,
       "degree": "Título o grado",
       "institution": "Institución",
       "period": "AAAA – AAAA",
@@ -54,31 +77,52 @@
   ],
   "projects": [
     {
+      "id": 1,
       "title": "Nombre del proyecto",
       "description": "Descripción breve del proyecto y su propósito.",
-      "tech": ["HTML", "CSS", "JavaScript"],
+      "tech": [
+        "HTML",
+        "CSS",
+        "JavaScript"
+      ],
       "repo": "",
       "demo": ""
     },
     {
+      "id": 2,
       "title": "Nombre del proyecto",
       "description": "Descripción breve del proyecto y su propósito.",
-      "tech": ["HTML", "CSS", "JavaScript"],
+      "tech": [
+        "HTML",
+        "CSS",
+        "JavaScript"
+      ],
       "repo": "",
       "demo": ""
     }
   ],
   "skills": [
     {
+      "id": 1,
       "category": "Categoría (ej. Frontend)",
-      "items": ["Habilidad 1", "Habilidad 2", "Habilidad 3"]
+      "items": [
+        "Habilidad 1",
+        "Habilidad 2",
+        "Habilidad 3"
+      ]
     },
     {
+      "id": 2,
       "category": "Categoría (ej. Backend)",
-      "items": ["Habilidad 1", "Habilidad 2", "Habilidad 3"]
+      "items": [
+        "Habilidad 1",
+        "Habilidad 2",
+        "Habilidad 3"
+      ]
     }
   ],
   "contact": {
+    "id": 1,
     "email": "tucorreo@ejemplo.com",
     "github": "",
     "linkedin": "",
