@@ -316,26 +316,35 @@ a:hover {
   margin-bottom: 28px;
 }
 
-.contact-links {
-  list-style: none;
-  display: grid;
-  gap: 12px;
+.social-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
-.contact-link {
-  display: block;
-  padding: 14px 18px;
+.social-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text);
-  font-weight: 500;
+  color: var(--text-muted);
+  transition: color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
-.contact-link:hover {
-  border-color: var(--accent);
+.social-link:hover {
   color: var(--accent);
+  border-color: var(--accent);
+  transform: translateY(-2px);
   text-decoration: none;
+}
+
+.social-link svg {
+  width: 24px;
+  height: 24px;
 }
 
 .site-footer {
