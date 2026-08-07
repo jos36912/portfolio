@@ -85,28 +85,29 @@
   "projects": [
     {
       "id": 1,
-      "title": "Nombre del proyecto",
-      "description": "Descripción breve del proyecto y su propósito.",
+      "title": "Portfolio personal",
+      "description": "Web personal profesional de una sola página, con contenido administrado desde Supabase, visibilidad segmentada por ítem y acceso ampliado para reclutadores mediante tokens temporales. Incluye panel de administración y respaldo automático con GitHub Actions.",
       "tech": [
         "HTML",
         "CSS",
-        "JavaScript"
+        "JavaScript",
+        "Supbase",
+        "GitHub Actions"
       ],
-      "repo": "",
-      "demo": "",
+      "repo": "https://github.com/jos36912/portfolio",
+      "demo": "https://jos36912.github.io/portfolio/",
       "visibility": "public"
     },
     {
       "id": 2,
-      "title": "Nombre del proyecto",
-      "description": "Descripción breve del proyecto y su propósito.",
+      "title": "N/A",
+      "description": "Descripción N/A",
       "tech": [
-        "HTML",
-        "CSS",
-        "JavaScript"
+        "N/A",
+        "N/A"
       ],
-      "repo": "",
-      "demo": "",
+      "repo": "N/A",
+      "demo": "N/A",
       "visibility": "public"
     }
   ],
