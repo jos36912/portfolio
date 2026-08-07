@@ -4,12 +4,15 @@ Una web personal profesional de una sola página, con diseño oscuro y contenido
 
 ## Características actuales
 
-- Una sola página con navegación por secciones (Inicio, Sobre mí, Hoja de vida, Proyectos, Habilidades, Contacto).
+- Una sola página con navegación por secciones (Inicio, Sobre mí, Hoja de vida, Proyectos, Habilidades, Contacto, Reclutador).
 - Tema oscuro, limpio y responsive.
 - Contenido persistido en **Supabase** (base de datos con RLS) con respaldo en `data/content.json`.
+- **Visibilidad segmentada por ítem**: cada fila de CV/educación/proyectos/habilidades y cada campo de perfil/contacto puede ser `public`, `recruiter` o `private`.
+- **Acceso para reclutadores por token temporal**: una sección pública permite ingresar un token; al validarlo el sitio re-renderiza el contenido ampliado fusionado en sus secciones y marca con una franja verde neón los ítems exclusivos de reclutador. La sesión dura 24 horas (o lo que defina el token) y se puede desactivar manualmente.
 - Panel de administración con inicio de sesión protegido (Supabase Auth).
-- Módulos del panel completos: **Perfil**, **Experiencia**, **Educación**, **Proyectos**, **Habilidades** y **Contacto** (crear, editar y eliminar).
-- Script `sync-content.py` para regenerar `data/content.json` desde Supabase.
+- Módulos del panel completos: **Perfil**, **Experiencia**, **Educación**, **Proyectos**, **Habilidades**, **Contacto** y **Tokens** (crear, editar y eliminar).
+- Generación de tokens de reclutador desde el panel: etiqueta, duración en horas, revocación manual y estado en vivo.
+- Script `sync-content.py` para regenerar `data/content.json` desde Supabase, automatizado con **GitHub Actions** (se regenera solo en cada push y a diario).
 - Favicon propio (`assets/darkness.ico`).
 - Compatible con dispositivos móviles y escritorio.
 
@@ -21,17 +24,20 @@ Una web personal profesional de una sola página, con diseño oscuro y contenido
 
 ```
 assets/            Recursos estáticos (favicon, imágenes, vendor).
+assets/vendor/     Bibliotecas de terceros (ej. sha256.js para hash de tokens).
 data/content.json  Respaldo del contenido (el sitio usa Supabase primero).
 index.html         Esqueleto mínimo del sitio.
 script.js          Carga el contenido (Supabase → fallback content.json) y renderiza.
 style.css          Estilos y tema oscuro.
 supabase-config.js Configuración compartida de Supabase (URL + anon key).
-supabase/schema.sql  Esquema de la base de datos (tablas, RLS y datos iniciales).
+supabase/schema.sql  Esquema de la base de datos (tablas, RLS, vistas y funciones RPC).
 sync-content.py      Regenera data/content.json con los datos actuales de Supabase.
 admin/             Panel de administración (login + panel), en carpeta separada.
 admin/index.html   Página del panel (se accede en /admin/).
 admin/admin.js     Lógica de sesión, login y módulos del panel.
 admin/admin.css    Estilos del panel de administración.
+.github/workflows/ Automatización con GitHub Actions (regenera data/content.json).
+cambios/           Informes y propuestas de evolución del proyecto.
 ```
 
 ## Tecnologías
@@ -40,6 +46,36 @@ admin/admin.css    Estilos del panel de administración.
 - CSS3
 - JavaScript
 - Supabase (Auth, Postgres/PostgREST con RLS)
+- GitHub Actions
+
+## Visibilidad del contenido
+
+Cada elemento de contenido define quién puede verlo:
+
+| Nivel       | Visible para                                     |
+|-------------|--------------------------------------------------|
+| `public`    | Cualquier visitante                              |
+| `recruiter` | Solo quien valide un token de reclutador válido  |
+| `private`   | Solo desde el panel de administración            |
+
+- **Listas** (experiencia, educación, proyectos, habilidades): la columna `visibility` se elige por fila.
+- **Perfil y contacto**: cada campo tiene su propia visibilidad (`name_visibility`, `role_visibility`, `email_visibility`, …).
+- El sitio público solo recibe contenido público (vistas `profile_public`/`contact_public` que enmascaran campos y RLS que filtra filas). El contenido ampliado se sirve **exclusivamente** a través del RPC `get_recruiter_content` cuando hay una sesión válida; ocultar en JavaScript no es el mecanismo de seguridad, sino el control de acceso del lado servidor.
+
+## Acceso para reclutadores
+
+1. En el panel, el propietario genera un token (módulo **Tokens**) con etiqueta y duración; el token se muestra una sola vez y se entrega al reclutador por un canal privado.
+2. En el sitio, la sección **Reclutador** pide el token.
+3. Al validarlo, el sitio re-renderiza el contenido ampliado dentro de sus secciones existentes (volviendo al inicio) y los ítems exclusivos de reclutador aparecen con una franja verde neón en el borde superior.
+4. La sesión queda guardada en el navegador hasta su expiración (24 h por defecto o el vencimiento del token). Un botón **Desactivar acceso** vuelve al modo público.
+5. Los tokens caducan automáticamente y pueden revocarse desde el panel en cualquier momento.
+
+### RPCs del lado servidor
+
+- `validate_recruiter_token(p_token)` — valida un token y abre una sesión temporal (`access_sessions`).
+- `get_recruiter_content(p_session_token)` — devuelve el contenido ampliado (`public` + `recruiter`) solo para una sesión válida y no revocada.
+
+Los tokens y las sesiones se almacenan como **SHA-256 de los bytes** del valor entregado; nunca en texto plano (ver `SECURITY.md`).
 
 ## Panel de administración
 
@@ -74,10 +110,10 @@ Luego abre `http://localhost:8000` en tu navegador.
 
 El contenido se edita desde el panel (`/admin/`) y se guarda en Supabase. El sitio público intenta leer de Supabase y, si no está disponible, usa `data/content.json` como respaldo.
 
-Para que el respaldo refleje los últimos cambios del panel, regenera `content.json` desde Supabase antes de hacer commit:
+Para que el respaldo refleje los últimos cambios del panel, `content.json` se regenera **automáticamente** mediante GitHub Actions (workflow `.github/workflows/sync-content.yml`), que se ejecuta en cada push a `main`/`portfolio`, a diario (cron) o manualmente desde la pestaña *Actions*. Si prefieres regenerarlo a mano:
 
 ```bash
 python3 sync-content.py
 ```
 
-El script lee las 6 tablas (profile, experience, education, projects, skills, contact) con la anon key de `supabase-config.js` y conserva las secciones estáticas (`site` y `sections`).
+El script lee las 6 tablas (profile, experience, education, projects, skills, contact) con la anon key de `supabase-config.js` y conserva las secciones estáticas (`site` y `sections`). Solo descarga contenido público: profile y contact se leen desde las vistas `profile_public`/`contact_public` y las tablas de listas aplican RLS (anon solo ve filas `public`).

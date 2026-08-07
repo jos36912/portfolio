@@ -29,8 +29,28 @@ const MODULE_LABELS = {
   educacion: 'Educación',
   proyectos: 'Proyectos',
   habilidades: 'Habilidades',
-  contacto: 'Contacto'
+  contacto: 'Contacto',
+  tokens: 'Tokens'
 };
+
+const VISIBILITY_OPTIONS = [
+  ['public', 'Público'],
+  ['recruiter', 'Reclutador'],
+  ['private', 'Privado']
+];
+
+const VISIBILITY_LABELS = Object.fromEntries(VISIBILITY_OPTIONS);
+
+function renderVisibilitySelect(value) {
+  const select = el('select', 'module-input module-select');
+  VISIBILITY_OPTIONS.forEach(([key, label]) => {
+    const option = el('option', null, label);
+    option.value = key;
+    if (key === value) option.selected = true;
+    select.appendChild(option);
+  });
+  return select;
+}
 
 const MODULES = {
   perfil: {
@@ -112,6 +132,11 @@ const MODULES = {
       ['category', 'Categoría', 'text'],
       ['items', 'Habilidades (una por línea)', 'list']
     ]
+  },
+  tokens: {
+    type: 'tokens',
+    table: 'recruiter_tokens',
+    itemLabel: 'Token'
   }
 };
 
@@ -142,6 +167,8 @@ function renderModule(name) {
 
   if (def.type === 'form') {
     renderFormModule(view, def);
+  } else if (def.type === 'tokens') {
+    renderTokensModule(view, def);
   } else {
     renderListModule(view, def);
   }
@@ -155,17 +182,26 @@ function renderFormModule(view, def) {
 
   const form = el('form', 'module-form');
   const inputs = {};
+  const visibilitySelects = {};
 
   def.fields.forEach(([key, label, type]) => {
-    form.appendChild(el('label', 'module-label', label));
+    const row = el('div', 'module-field-row');
+    row.appendChild(el('label', 'module-label', label));
     const input = el(type === 'textarea' || type === 'list' ? 'textarea' : 'input');
     input.name = key;
     input.id = def.table + '-' + key;
     input.className = 'module-input';
     if (type === 'text') input.type = 'text';
     if (type === 'textarea' || type === 'list') input.rows = 4;
-    form.appendChild(input);
+    row.appendChild(input);
+    const visRow = el('div', 'module-field-vis');
+    visRow.appendChild(el('span', 'module-vis-label', 'Visibilidad'));
+    const visibility = renderVisibilitySelect('public');
+    visRow.appendChild(visibility);
+    row.appendChild(visRow);
+    form.appendChild(row);
     inputs[key] = input;
+    visibilitySelects[key] = visibility;
   });
 
   const feedback = el('p', 'module-feedback');
@@ -191,6 +227,8 @@ function renderFormModule(view, def) {
         def.fields.forEach(([key, _label, type]) => {
           const value = data[key];
           inputs[key].value = type === 'list' ? (value || []).join('\n') : (value || '');
+          const visSelect = visibilitySelects[key];
+          if (visSelect) visSelect.value = data[key + '_visibility'] || 'public';
         });
       }
     });
@@ -202,6 +240,8 @@ function renderFormModule(view, def) {
     const payload = { id: 1 };
     def.fields.forEach(([key, _label, type]) => {
       payload[key] = fieldValue(inputs[key], type);
+      const visSelect = visibilitySelects[key];
+      payload[key + '_visibility'] = (visSelect && visSelect.value) || 'public';
     });
 
     submit.disabled = true;
@@ -265,6 +305,209 @@ function renderListModule(view, def) {
     });
 }
 
+function hexFromBytes(bytes) {
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function hashBytes(bytes) {
+  if (crypto && crypto.subtle) {
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    return hexFromBytes(new Uint8Array(digest));
+  }
+  if (window.SHA256) return window.SHA256.hex(bytes);
+  throw new Error('No hay proveedor SHA-256 disponible. Accede por HTTPS o localhost.');
+}
+
+async function generateRecruiterToken() {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  const token = hexFromBytes(bytes);
+  const hash = await hashBytes(bytes);
+  return { token, hash };
+}
+
+function tokenState(token) {
+  if (token.revoked_at) return { key: 'revocado', label: 'Revocado', badge: 'module-badge--revocado' };
+  if (token.expires_at && new Date(token.expires_at) < new Date()) {
+    return { key: 'caducado', label: 'Caducado', badge: 'module-badge--caducado' };
+  }
+  return { key: 'activo', label: 'Activo', badge: 'module-badge--activo' };
+}
+
+function formatDateTime(value) {
+  if (!value) return '';
+  return new Date(value).toLocaleString();
+}
+
+function renderTokenBox(container, token) {
+  container.hidden = false;
+  container.innerHTML = '';
+  container.appendChild(
+    el('p', 'module-label', 'Token generado. Cópialo ahora y entrégalo por correo o mensaje privado: solo se muestra una vez.')
+  );
+  const code = el('code', 'module-token-code', token);
+  const copy = el('button', 'btn btn--small', 'Copiar');
+  copy.type = 'button';
+  copy.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(token);
+    } catch (_) {
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(code);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+    copy.textContent = 'Copiado';
+    setTimeout(() => {
+      copy.textContent = 'Copiar';
+    }, 1500);
+  });
+  const box = el('div', 'module-token-box');
+  box.appendChild(code);
+  box.appendChild(copy);
+  container.appendChild(box);
+}
+
+function renderTokensModule(view, def) {
+  view.innerHTML = '';
+
+  if (!supabaseClient) {
+    view.appendChild(el('p', 'module-feedback module-feedback--error', 'Supabase no está disponible.'));
+    return;
+  }
+
+  const feedback = el('p', 'module-feedback');
+  feedback.hidden = true;
+
+  const form = el('form', 'module-form');
+  form.appendChild(el('label', 'module-label', 'Etiqueta (ej. "Reclutador — Empresa X")'));
+  const labelInput = el('input');
+  labelInput.name = 'label';
+  labelInput.className = 'module-input';
+  labelInput.type = 'text';
+  form.appendChild(labelInput);
+
+  form.appendChild(el('label', 'module-label', 'Duración (horas)'));
+  const durationInput = el('input');
+  durationInput.name = 'duration';
+  durationInput.className = 'module-input';
+  durationInput.type = 'number';
+  durationInput.min = '1';
+  durationInput.value = '24';
+  form.appendChild(durationInput);
+
+  const submit = el('button', 'btn', 'Generar token');
+  submit.type = 'submit';
+  const actions = el('div', 'module-actions');
+  actions.appendChild(submit);
+  form.appendChild(feedback);
+  form.appendChild(actions);
+  view.appendChild(form);
+
+  const tokenOutput = el('div', 'module-token-output');
+  tokenOutput.hidden = true;
+  view.appendChild(tokenOutput);
+
+  const listBox = el('div', 'module-tokens-list');
+  view.appendChild(listBox);
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    feedback.hidden = true;
+    submit.disabled = true;
+    submit.textContent = 'Generando...';
+    try {
+      const { token, hash } = await generateRecruiterToken();
+      const hours = Math.max(1, parseInt(durationInput.value, 10) || 24);
+      const expiresAt = new Date(Date.now() + hours * 3600 * 1000).toISOString();
+      const { error } = await supabaseClient.from(def.table).insert({
+        label: labelInput.value.trim() || 'Token de reclutador',
+        token_hash: hash,
+        scope: 'extended',
+        expires_at: expiresAt
+      });
+      if (error) {
+        showFeedback(feedback, 'Error al generar el token: ' + error.message, true);
+      } else {
+        renderTokenBox(tokenOutput, token);
+        labelInput.value = '';
+        loadTokensList(listBox, def);
+      }
+    } catch (error) {
+      showFeedback(feedback, 'No se pudo generar el token: ' + error.message, true);
+    } finally {
+      submit.disabled = false;
+      submit.textContent = 'Generar token';
+    }
+  });
+
+  loadTokensList(listBox, def);
+}
+
+function loadTokensList(listBox, def) {
+  listBox.innerHTML = '';
+  listBox.appendChild(el('h3', 'module-subtitle', 'Tokens existentes'));
+
+  supabaseClient
+    .from(def.table)
+    .select('*')
+    .order('created_at', { ascending: false })
+    .then(({ data, error }) => {
+      if (error) {
+        listBox.appendChild(
+          el('p', 'module-feedback module-feedback--error', 'No se pudieron cargar los tokens. ¿Ejecutaste supabase/schema.sql?')
+        );
+        return;
+      }
+
+      if (!data.length) {
+        listBox.appendChild(el('p', 'module-empty', 'No hay tokens todavía. Genera el primero arriba.'));
+        return;
+      }
+
+      const list = el('div', 'module-list');
+      data.forEach((token) => {
+        const card = el('article', 'module-item');
+        const state = tokenState(token);
+
+        const title = el('h3', 'module-item-title', token.label || 'Token');
+        card.appendChild(title);
+        card.appendChild(el('span', 'module-badge ' + state.badge, state.label));
+
+        const meta = el('p', 'module-item-meta');
+        meta.textContent = 'Creado: ' + formatDateTime(token.created_at) + (token.expires_at ? ' · Expira: ' + formatDateTime(token.expires_at) : '');
+        card.appendChild(meta);
+
+        if (token.last_used_at) {
+          card.appendChild(el('p', 'module-item-meta', 'Último uso: ' + formatDateTime(token.last_used_at)));
+        }
+
+        if (state.key === 'activo') {
+          const actions = el('div', 'module-item-actions');
+          const revokeButton = el('button', 'btn btn--small btn--danger', 'Revocar');
+          revokeButton.type = 'button';
+          revokeButton.addEventListener('click', async () => {
+            if (!window.confirm('¿Revocar este token? Dejará de funcionar de inmediato.')) return;
+            const { error } = await supabaseClient
+              .from(def.table)
+              .update({ revoked_at: new Date().toISOString() })
+              .eq('id', token.id);
+            if (error) {
+              window.alert('Error al revocar: ' + error.message);
+            } else {
+              loadTokensList(listBox, def);
+            }
+          });
+          actions.appendChild(revokeButton);
+          card.appendChild(actions);
+        }
+
+        list.appendChild(card);
+      });
+      listBox.appendChild(list);
+    });
+}
+
 function buildItemCard(view, row, def) {
   const card = el('article', 'module-item');
 
@@ -272,6 +515,13 @@ function buildItemCard(view, row, def) {
     .map((key) => row[key])
     .filter(Boolean);
   card.appendChild(el('h3', 'module-item-title', titleParts.join(' · ') || 'Sin título'));
+
+  const visibility = row.visibility || 'public';
+  if (visibility !== 'public') {
+    card.appendChild(
+      el('span', 'module-badge module-badge--' + visibility, VISIBILITY_LABELS[visibility] || visibility)
+    );
+  }
 
   const metaParts = (def.metaFields || [])
     .map((key) => row[key])
@@ -339,7 +589,14 @@ function renderItemForm(view, def, row) {
   const actions = el('div', 'module-actions');
   actions.appendChild(submit);
   actions.appendChild(cancelButton);
+
+  const visRow = el('div', 'module-field-row');
+  visRow.appendChild(el('label', 'module-label', 'Visibilidad'));
+  const visibility = renderVisibilitySelect(editing ? row.visibility || 'public' : 'public');
+  visRow.appendChild(visibility);
+
   form.appendChild(feedback);
+  form.appendChild(visRow);
   form.appendChild(actions);
   view.appendChild(form);
 
@@ -358,6 +615,7 @@ function renderItemForm(view, def, row) {
     def.fields.forEach(([key, _label, type]) => {
       payload[key] = fieldValue(inputs[key], type);
     });
+    payload.visibility = visibility.value;
 
     submit.disabled = true;
     submit.textContent = 'Guardando...';

@@ -6,6 +6,10 @@ reemplaza los datos (profile, experience, education, projects, skills, contact)
 con el contenido actual de las tablas en Supabase. Uso:
 
     python3 sync-content.py
+
+Como respaldo publico, solo descarga contenido con visibilidad publica:
+profile y contact se leen desde las vistas profile_public/contact_public y
+las tablas de listas aplican RLS (anon solo ve filas 'public').
 """
 import json
 import re
@@ -17,8 +21,16 @@ ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = ROOT / 'supabase-config.js'
 CONTENT_PATH = ROOT / 'data' / 'content.json'
 
-TABLES = ['profile', 'experience', 'education', 'projects', 'skills', 'contact']
-SINGLE = {'profile', 'contact'}
+# clave en content.json -> tabla/vista en Supabase
+TABLES = {
+    'profile': 'profile_public',
+    'experience': 'experience',
+    'education': 'education',
+    'projects': 'projects',
+    'skills': 'skills',
+    'contact': 'contact_public',
+}
+SINGLE = {'profile_public', 'contact_public'}
 
 
 def load_config(path):
@@ -51,11 +63,11 @@ def main():
     if CONTENT_PATH.exists():
         content = json.loads(CONTENT_PATH.read_text(encoding='utf-8'))
 
-    for table in TABLES:
-        content[table] = fetch_rows(base_url, anon_key, table)
+    for key, table in TABLES.items():
+        content[key] = fetch_rows(base_url, anon_key, table)
 
     CONTENT_PATH.write_text(json.dumps(content, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
-    print('content.json actualizado con los datos de Supabase.')
+    print('content.json actualizado con los datos públicos de Supabase.')
 
 
 if __name__ == '__main__':

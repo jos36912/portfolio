@@ -34,13 +34,18 @@
       "id": "contacto",
       "label": "Contacto",
       "type": "contact"
+    },
+    {
+      "id": "reclutador",
+      "label": "Reclutador",
+      "type": "recruiter"
     }
   ],
   "profile": {
     "id": 1,
     "name": "Jeyson Jarquin Salgado",
     "role": "Entusiasta a Cirberseguridad y desarrollo en python.",
-    "tagline": "VBreve frase profesional que resuma tu valor y enfoque.",
+    "tagline": "Breve frase profesional que resuma tu valor y enfoque.",
     "photo": "",
     "location": "",
     "summary": [
@@ -63,16 +68,18 @@
       "tech": [
         "Tecnología 1",
         "Tecnología 2"
-      ]
+      ],
+      "visibility": "public"
     }
   ],
   "education": [
     {
       "id": 1,
-      "degree": "Título o grado",
+      "degree": "Noveno aprobado",
       "institution": "Institución",
       "period": "AAAA – AAAA",
-      "notes": "Nota opcional (menciones, enfoque, etc.)"
+      "notes": "Nota opcional (menciones, enfoque, etc.)",
+      "visibility": "public"
     }
   ],
   "projects": [
@@ -86,7 +93,8 @@
         "JavaScript"
       ],
       "repo": "",
-      "demo": ""
+      "demo": "",
+      "visibility": "public"
     },
     {
       "id": 2,
@@ -98,7 +106,8 @@
         "JavaScript"
       ],
       "repo": "",
-      "demo": ""
+      "demo": "",
+      "visibility": "public"
     }
   ],
   "skills": [
@@ -109,7 +118,8 @@
         "Habilidad 1",
         "Habilidad 2",
         "Habilidad 3"
-      ]
+      ],
+      "visibility": "public"
     },
     {
       "id": 2,
@@ -118,15 +128,16 @@
         "Habilidad 1",
         "Habilidad 2",
         "Habilidad 3"
-      ]
+      ],
+      "visibility": "public"
     }
   ],
   "contact": {
     "id": 1,
     "email": "carless_five332@simplelogin.com",
-    "github": "https://github.com/jos36912",
-    "linkedin": "https://www.linkedin.com/in/jeyson-jarquin-b6983b340?utm_source=share_via&utm_content=profile&utm_medium=member_android",
-    "website": "",
+    "github": null,
+    "linkedin": null,
+    "website": "https://jos36912.github.io/portfolio/#inicio",
     "message": "Texto breve invitando a contactarte para oportunidades profesionales."
   }
 }

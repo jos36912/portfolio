@@ -12,10 +12,74 @@ const DEFAULT_SECTIONS = [
   { id: 'cv', label: 'Hoja de vida', type: 'cv' },
   { id: 'proyectos', label: 'Proyectos', type: 'projects' },
   { id: 'habilidades', label: 'Habilidades', type: 'skills' },
-  { id: 'contacto', label: 'Contacto', type: 'contact' }
+  { id: 'contacto', label: 'Contacto', type: 'contact' },
+  { id: 'reclutador', label: 'Reclutador', type: 'recruiter' }
 ];
 
 const app = document.getElementById('app');
+
+const SESSION_KEY = 'recruiter_session';
+let publicData = null;
+let extendedData = null;
+
+function isRecruiterActive() {
+  return Boolean(extendedData);
+}
+
+const HERO_FIELDS = ['name', 'role', 'tagline', 'photo'];
+const ABOUT_FIELDS = ['summary', 'highlights'];
+const CONTACT_FIELDS = ['email', 'github', 'linkedin', 'website', 'message'];
+
+function isFieldVisible(item, key) {
+  const level = item[key + '_visibility'];
+  return !level || level === 'public';
+}
+
+function itemVisibleForCurrent(item) {
+  if (!item.visibility) return true;
+  if (isRecruiterActive()) return item.visibility === 'public' || item.visibility === 'recruiter';
+  return item.visibility === 'public';
+}
+
+function fieldHasContent(item, key) {
+  const value = item[key];
+  return Array.isArray(value) ? value.length > 0 : Boolean(value);
+}
+
+function markRecruiterItem(node, item) {
+  if (isRecruiterActive() && item.visibility === 'recruiter') {
+    node.classList.add('recruiter-marked');
+  }
+}
+
+function sectionHasVisibleContent(section, data) {
+  const type = section.type;
+
+  if (type === 'hero' || type === 'about') {
+    const profile = data.profile || {};
+    const fields = type === 'hero' ? HERO_FIELDS : ABOUT_FIELDS;
+    return fields.some((key) => isFieldVisible(profile, key) && fieldHasContent(profile, key));
+  }
+
+  if (type === 'cv') {
+    return (data.experience || []).some(itemVisibleForCurrent) || (data.education || []).some(itemVisibleForCurrent);
+  }
+
+  if (type === 'projects') {
+    return (data.projects || []).some(itemVisibleForCurrent);
+  }
+
+  if (type === 'skills') {
+    return (data.skills || []).some(itemVisibleForCurrent);
+  }
+
+  if (type === 'contact') {
+    const contact = data.contact || {};
+    return CONTACT_FIELDS.some((key) => isFieldVisible(contact, key) && fieldHasContent(contact, key));
+  }
+
+  return true;
+}
 
 function escapeHtml(value) {
   return String(value)
@@ -66,16 +130,22 @@ function createSection(section) {
 function renderHero(sec, profile) {
   const inner = el('div', 'hero');
 
-  if (profile.photo) {
+  if (isFieldVisible(profile, 'photo') && profile.photo) {
     const img = el('img', 'hero-photo');
     img.src = profile.photo;
     img.alt = 'Foto de ' + profile.name;
     inner.appendChild(img);
   }
 
-  inner.appendChild(el('h1', 'hero-name', profile.name));
-  inner.appendChild(el('p', 'hero-role', profile.role));
-  inner.appendChild(el('p', 'hero-tagline', profile.tagline));
+  if (isFieldVisible(profile, 'name') && profile.name) {
+    inner.appendChild(el('h1', 'hero-name', profile.name));
+  }
+  if (isFieldVisible(profile, 'role') && profile.role) {
+    inner.appendChild(el('p', 'hero-role', profile.role));
+  }
+  if (isFieldVisible(profile, 'tagline') && profile.tagline) {
+    inner.appendChild(el('p', 'hero-tagline', profile.tagline));
+  }
 
   const actions = el('div', 'hero-actions');
   const cvLink = el('a', 'btn', 'Ver perfil');
@@ -92,11 +162,13 @@ function renderHero(sec, profile) {
 function renderAbout(sec, profile) {
   const inner = el('div', 'about');
 
-  profile.summary.forEach((paragraph) => {
-    inner.appendChild(el('p', 'about-text', paragraph));
-  });
+  if (isFieldVisible(profile, 'summary') && profile.summary.length) {
+    profile.summary.forEach((paragraph) => {
+      inner.appendChild(el('p', 'about-text', paragraph));
+    });
+  }
 
-  if (profile.highlights.length) {
+  if (isFieldVisible(profile, 'highlights') && profile.highlights.length) {
     const list = el('ul', 'about-highlights');
     profile.highlights.forEach((highlight) => {
       list.appendChild(el('li', null, highlight));
@@ -114,8 +186,9 @@ function renderCv(sec, data) {
   experienceBlock.appendChild(el('h3', 'cv-subtitle', 'Experiencia'));
   const experienceList = el('div', 'timeline');
 
-  data.experience.forEach((item) => {
+  data.experience.filter(itemVisibleForCurrent).forEach((item) => {
     const entry = el('article', 'timeline-entry');
+    markRecruiterItem(entry, item);
     entry.appendChild(el('h4', 'timeline-role', item.role));
     entry.appendChild(el('p', 'timeline-meta', item.company + ' · ' + item.period));
     entry.appendChild(el('p', 'timeline-summary', item.summary));
@@ -132,8 +205,9 @@ function renderCv(sec, data) {
   educationBlock.appendChild(el('h3', 'cv-subtitle', 'Educación'));
   const educationList = el('div', 'timeline');
 
-  data.education.forEach((item) => {
+  data.education.filter(itemVisibleForCurrent).forEach((item) => {
     const entry = el('article', 'timeline-entry');
+    markRecruiterItem(entry, item);
     entry.appendChild(el('h4', 'timeline-role', item.degree));
     entry.appendChild(el('p', 'timeline-meta', item.institution + ' · ' + item.period));
     if (item.notes) {
@@ -159,8 +233,9 @@ function buildTechList(items) {
 function renderProjects(sec, projects) {
   const grid = el('div', 'projects-grid');
 
-  projects.forEach((project) => {
+  projects.filter(itemVisibleForCurrent).forEach((project) => {
     const card = el('article', 'project-card');
+    markRecruiterItem(card, project);
     card.appendChild(el('h3', 'project-title', project.title));
     card.appendChild(el('p', 'project-description', project.description));
     card.appendChild(buildTechList(project.tech));
@@ -191,8 +266,9 @@ function renderProjects(sec, projects) {
 function renderSkills(sec, skills) {
   const grid = el('div', 'skills-grid');
 
-  skills.forEach((group) => {
+  skills.filter(itemVisibleForCurrent).forEach((group) => {
     const block = el('div', 'skill-group');
+    markRecruiterItem(block, group);
     block.appendChild(el('h3', 'skill-category', group.category));
 
     const list = el('ul', 'tags');
@@ -220,7 +296,10 @@ const SOCIAL_ICONS = {
 
 function renderContact(sec, contact) {
   const inner = el('div', 'contact');
-  inner.appendChild(el('p', 'contact-message', contact.message));
+
+  if (isFieldVisible(contact, 'message') && contact.message) {
+    inner.appendChild(el('p', 'contact-message', contact.message));
+  }
 
   const socials = el('div', 'social-links');
   const entries = [
@@ -231,7 +310,7 @@ function renderContact(sec, contact) {
   ];
 
   entries.forEach((entry) => {
-    if (!entry.value) return;
+    if (!isFieldVisible(contact, entry.key) || !entry.value) return;
     const link = el('a', 'social-link');
     link.href = entry.href || entry.value;
     link.title = entry.label;
@@ -248,13 +327,178 @@ function renderContact(sec, contact) {
   sec.appendChild(inner);
 }
 
+function getStoredSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const session = JSON.parse(raw);
+    if (!session || !session.session_token || !session.session_expires) return null;
+    if (new Date(session.session_expires).getTime() <= Date.now()) {
+      localStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    return session;
+  } catch (_) {
+    return null;
+  }
+}
+
+function clearRecruiterSession() {
+  try {
+    localStorage.removeItem(SESSION_KEY);
+  } catch (_) {}
+}
+
+async function callRpc(name, payload) {
+  const config = window.CONFIG;
+  const url = config.SUPABASE_URL + '/rest/v1/rpc/' + name;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      apikey: config.SUPABASE_ANON_KEY,
+      Authorization: 'Bearer ' + config.SUPABASE_ANON_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload || {})
+  });
+  if (!response.ok) throw new Error(name + ': HTTP ' + response.status);
+  return response.json();
+}
+
+function validateRecruiterToken(token) {
+  return callRpc('validate_recruiter_token', { p_token: token });
+}
+
+function fetchRecruiterContent(sessionToken) {
+  return callRpc('get_recruiter_content', { p_session_token: sessionToken });
+}
+
+function hasValue(value) {
+  return Array.isArray(value) ? value.length > 0 : Boolean(value);
+}
+
+function mergeObjectFields(base, extra) {
+  const merged = Object.assign({}, base || {});
+  for (const key of Object.keys(extra || {})) {
+    if (key === 'id') continue;
+    if (hasValue(extra[key])) merged[key] = extra[key];
+  }
+  return merged;
+}
+
+function buildExtendedData(content) {
+  return {
+    ...publicData,
+    experience: content.experience || [],
+    education: content.education || [],
+    projects: content.projects || [],
+    skills: content.skills || [],
+    profile: mergeObjectFields(publicData.profile, content.profile),
+    contact: mergeObjectFields(publicData.contact, content.contact)
+  };
+}
+
+async function loadExtendedData(session) {
+  const content = await fetchRecruiterContent(session.session_token);
+  if (!content || !content.ok) {
+    extendedData = null;
+    return false;
+  }
+  extendedData = buildExtendedData(content);
+  return true;
+}
+
+function deactivateRecruiterAccess() {
+  clearRecruiterSession();
+  extendedData = null;
+  render(publicData);
+}
+
+function renderRecruiter(sec) {
+  const inner = el('div', 'recruiter');
+
+  const session = getStoredSession();
+  if (isRecruiterActive() && session) {
+    inner.appendChild(
+      el('p', 'recruiter-status', 'Acceso ampliado activo hasta ' + new Date(session.session_expires).toLocaleString())
+    );
+    const deactivate = el('button', 'btn btn--small btn--secondary', 'Desactivar acceso');
+    deactivate.type = 'button';
+    deactivate.addEventListener('click', deactivateRecruiterAccess);
+    inner.appendChild(deactivate);
+    sec.appendChild(inner);
+    return;
+  }
+
+  if (extendedData) extendedData = null;
+
+  const form = el('form', 'recruiter-form');
+  const input = el('input', 'recruiter-input');
+  input.type = 'text';
+  input.placeholder = 'Ingresa tu token de reclutador';
+  input.autocomplete = 'off';
+  input.setAttribute('aria-label', 'Token de reclutador');
+  const submit = el('button', 'btn', 'Activar acceso');
+  submit.type = 'submit';
+  const feedback = el('p', 'recruiter-feedback');
+  feedback.hidden = true;
+  form.appendChild(input);
+  form.appendChild(submit);
+  form.appendChild(feedback);
+  inner.appendChild(form);
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    feedback.hidden = true;
+    const token = input.value.trim();
+    if (!token) return;
+    submit.disabled = true;
+    submit.textContent = 'Validando...';
+    try {
+      const result = await validateRecruiterToken(token);
+      if (result && result.ok) {
+        localStorage.setItem(
+          SESSION_KEY,
+          JSON.stringify({ session_token: result.session_token, session_expires: result.session_expires })
+        );
+        const loaded = await loadExtendedData(result);
+        if (loaded) {
+          render(extendedData);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          clearRecruiterSession();
+          feedback.hidden = false;
+          feedback.textContent = 'No se pudo cargar el contenido ampliado.';
+        }
+      } else {
+        feedback.hidden = false;
+        feedback.textContent = 'Token inválido, caducado o revocado.';
+      }
+    } catch (_) {
+      feedback.hidden = false;
+      feedback.textContent = 'No se pudo validar el token en este momento.';
+    } finally {
+      submit.disabled = false;
+      submit.textContent = 'Activar acceso';
+    }
+  });
+
+  sec.appendChild(inner);
+}
+
 function render(data) {
   document.documentElement.lang = data.site.lang || 'es';
   document.title = data.site.title || 'Portfolio';
 
-  buildHeader(data.sections);
+  const existingHeader = document.querySelector('.site-header');
+  if (existingHeader) existingHeader.remove();
+  app.innerHTML = '';
 
-  data.sections.forEach((section) => {
+  const sections = data.sections.filter((section) => sectionHasVisibleContent(section, data));
+
+  buildHeader(sections);
+
+  sections.forEach((section) => {
     const sec = createSection(section);
     const content =
       data[section.type === 'hero' || section.type === 'about' ? 'profile' : section.type];
@@ -278,6 +522,9 @@ function render(data) {
       case 'contact':
         renderContact(sec, data.contact);
         break;
+      case 'recruiter':
+        renderRecruiter(sec);
+        break;
       default:
         sec.appendChild(el('p', null, 'Sección sin renderizador: ' + section.label));
     }
@@ -285,7 +532,7 @@ function render(data) {
     app.appendChild(sec);
   });
 
-  setupActiveNav(data.sections);
+  setupActiveNav(sections);
 }
 
 function setupActiveNav(sections) {
@@ -338,12 +585,12 @@ function normalizeContent(data) {
 
 async function loadSupabaseContent() {
   const [profile, experience, education, projects, skills, contact] = await Promise.all([
-    fetchSupabaseTable('profile', true),
+    fetchSupabaseTable('profile_public', true),
     fetchSupabaseTable('experience'),
     fetchSupabaseTable('education'),
     fetchSupabaseTable('projects'),
     fetchSupabaseTable('skills'),
-    fetchSupabaseTable('contact', true)
+    fetchSupabaseTable('contact_public', true)
   ]);
   return normalizeContent({ profile, experience, education, projects, skills, contact });
 }
@@ -363,14 +610,21 @@ async function loadContent() {
 
 (async function init() {
   try {
-    const data = await loadContent();
-    render(data);
+    publicData = await loadContent();
+    render(publicData);
+
+    const session = getStoredSession();
+    if (session) {
+      try {
+        if (await loadExtendedData(session)) render(extendedData);
+      } catch (_) {}
+    }
   } catch (error) {
     const message = el('section', 'error');
     message.appendChild(el('h1', null, 'No se pudo cargar el contenido'));
     message.appendChild(el('p', null, error.message));
     message.appendChild(
-      el('p', null, 'Asegúrate de servir el sitio por HTTP (ej: python3 -m http.server).')
+      el('p', null, 'Felíz Jueves si la página no cargó...')
     );
     app.appendChild(message);
   }

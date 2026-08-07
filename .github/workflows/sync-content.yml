@@ -1,0 +1,36 @@
+name: sync-content
+
+on:
+  push:
+    branches:
+      - main
+      - portfolio
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Regenerar content.json desde Supabase
+        run: python3 sync-content.py
+
+      - name: Commit y push si hay cambios
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- data/content.json; then
+            echo "content.json al dia, sin cambios."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/content.json
+          git commit -m "data: content.json regenerado desde Supabase [skip ci]"
+          git push
