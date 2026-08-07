@@ -21,6 +21,9 @@ const app = document.getElementById('app');
 const SESSION_KEY = 'recruiter_session';
 let publicData = null;
 let extendedData = null;
+let recruiterExpiryTimer = null;
+let recruiterExpiryCheck = null;
+let recruiterExpiryNotice = false;
 
 function isRecruiterActive() {
   return Boolean(extendedData);
@@ -349,6 +352,37 @@ function clearRecruiterSession() {
   } catch (_) {}
 }
 
+function clearRecruiterTimers() {
+  if (recruiterExpiryTimer) {
+    clearTimeout(recruiterExpiryTimer);
+    recruiterExpiryTimer = null;
+  }
+  if (recruiterExpiryCheck) {
+    clearInterval(recruiterExpiryCheck);
+    recruiterExpiryCheck = null;
+  }
+}
+
+function expireRecruiterAccess() {
+  recruiterExpiryNotice = true;
+  deactivateRecruiterAccess();
+}
+
+function scheduleRecruiterExpiry() {
+  clearRecruiterTimers();
+  const session = getStoredSession();
+  if (!session) return;
+  const ms = new Date(session.session_expires).getTime() - Date.now();
+  if (ms <= 0) {
+    expireRecruiterAccess();
+    return;
+  }
+  recruiterExpiryTimer = setTimeout(expireRecruiterAccess, ms + 500);
+  recruiterExpiryCheck = setInterval(() => {
+    if (!getStoredSession() && extendedData) expireRecruiterAccess();
+  }, 30000);
+}
+
 async function callRpc(name, payload) {
   const config = window.CONFIG;
   const url = config.SUPABASE_URL + '/rest/v1/rpc/' + name;
@@ -409,6 +443,7 @@ async function loadExtendedData(session) {
 }
 
 function deactivateRecruiterAccess() {
+  clearRecruiterTimers();
   clearRecruiterSession();
   extendedData = null;
   render(publicData);
@@ -441,7 +476,11 @@ function renderRecruiter(sec) {
   const submit = el('button', 'btn', 'Activar acceso');
   submit.type = 'submit';
   const feedback = el('p', 'recruiter-feedback');
-  feedback.hidden = true;
+  feedback.hidden = !recruiterExpiryNotice;
+  if (recruiterExpiryNotice) {
+    feedback.textContent = 'El acceso ampliado caducó. Ingresa un token nuevo.';
+    recruiterExpiryNotice = false;
+  }
   form.appendChild(input);
   form.appendChild(submit);
   form.appendChild(feedback);
@@ -464,6 +503,7 @@ function renderRecruiter(sec) {
         const loaded = await loadExtendedData(result);
         if (loaded) {
           render(extendedData);
+          scheduleRecruiterExpiry();
           window.scrollTo({ top: 0, behavior: 'smooth' });
         } else {
           clearRecruiterSession();
@@ -616,7 +656,10 @@ async function loadContent() {
     const session = getStoredSession();
     if (session) {
       try {
-        if (await loadExtendedData(session)) render(extendedData);
+        if (await loadExtendedData(session)) {
+          render(extendedData);
+          scheduleRecruiterExpiry();
+        }
       } catch (_) {}
     }
   } catch (error) {
