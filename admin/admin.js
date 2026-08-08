@@ -27,9 +27,11 @@ const MODULE_LABELS = {
   perfil: 'Perfil',
   experiencia: 'Experiencia',
   educacion: 'Educación',
+  certificaciones: 'Certificaciones',
   proyectos: 'Proyectos',
   habilidades: 'Habilidades',
   contacto: 'Contacto',
+  medios: 'Medios',
   tokens: 'Tokens'
 };
 
@@ -107,6 +109,21 @@ const MODULES = {
       ['notes', 'Notas', 'textarea']
     ]
   },
+  certificaciones: {
+    type: 'list',
+    table: 'certifications',
+    itemLabel: 'Certificación',
+    titleFields: ['title'],
+    metaFields: ['issuer', 'date'],
+    fields: [
+      ['title', 'Título', 'text'],
+      ['issuer', 'Institución / emisor', 'text'],
+      ['date', 'Fecha', 'text'],
+      ['description', 'Descripción', 'textarea'],
+      ['credential_id', 'ID de credencial (visible solo para reclutadores)', 'text'],
+      ['media_asset_id', 'Archivo (PDF/imagen subido en Medios)', 'select', 'media_assets']
+    ]
+  },
   proyectos: {
     type: 'list',
     table: 'projects',
@@ -133,6 +150,11 @@ const MODULES = {
       ['items', 'Habilidades (una por línea)', 'list']
     ]
   },
+  medios: {
+    type: 'media',
+    table: 'media_assets',
+    itemLabel: 'Medio'
+  },
   tokens: {
     type: 'tokens',
     table: 'recruiter_tokens',
@@ -153,6 +175,23 @@ function showFeedback(node, message, isError) {
   node.classList.toggle('module-feedback--error', Boolean(isError));
 }
 
+function describeFunctionError(error, data) {
+  const status =
+    (error && (error.status || (error.context && error.context.status))) || null;
+  const bodyError = data && typeof data === 'object' && data.error ? data.error : null;
+
+  if (status === 401) {
+    const suffix = bodyError ? ' (' + bodyError + ')' : '';
+    return 'Sesión caducada. Cierra sesión y vuelve a iniciar sesión.' + suffix;
+  }
+
+  const parts = [];
+  if (status) parts.push('HTTP ' + status);
+  if (bodyError) parts.push(bodyError);
+  if (error && error.message && !error.message.includes('non-2xx')) parts.push(error.message);
+  return parts.join(' — ') || (error && error.message) || 'Error desconocido';
+}
+
 function renderModule(name) {
   const view = document.getElementById('module-view');
   const title = document.getElementById('panel-title');
@@ -169,6 +208,8 @@ function renderModule(name) {
     renderFormModule(view, def);
   } else if (def.type === 'tokens') {
     renderTokensModule(view, def);
+  } else if (def.type === 'media') {
+    renderMediaModule(view, def);
   } else {
     renderListModule(view, def);
   }
@@ -567,8 +608,44 @@ function renderItemForm(view, def, row) {
   const form = el('form', 'module-form');
   const inputs = {};
 
-  def.fields.forEach(([key, label, type]) => {
+  def.fields.forEach(([key, label, type, optionTable]) => {
     form.appendChild(el('label', 'module-label', label));
+
+    if (type === 'select') {
+      const select = el('select', 'module-input module-select');
+      select.name = key;
+      select.id = def.table + '-' + key;
+      const empty = el('option', null, '— Ninguno —');
+      empty.value = '';
+      select.appendChild(empty);
+      inputs[key] = select;
+      if (optionTable) {
+        supabaseClient
+          .from(optionTable)
+          .select('id,name,visibility')
+          .then(({ data }) => {
+            (data || []).forEach((optionRow) => {
+              let label = optionRow.name || ('#' + optionRow.id);
+              if (optionTable === 'media_assets' && optionRow.visibility) {
+                label += ' (' + (VISIBILITY_LABELS[optionRow.visibility] || optionRow.visibility) + ')';
+              }
+              const option = el('option', null, label);
+              option.value = optionRow.id;
+              select.appendChild(option);
+            });
+            if (editing && row[key]) select.value = row[key];
+          });
+      }
+      form.appendChild(select);
+      if (key === 'media_asset_id' && optionTable === 'media_assets') {
+        form.appendChild(
+          el('p', 'module-hint',
+            'La visibilidad del adjunto se controla en Medios: public = todos, recruiter/private = solo reclutadores con token.')
+        );
+      }
+      return;
+    }
+
     const input = el(type === 'list' || type === 'textarea' ? 'textarea' : 'input');
     input.name = key;
     input.id = def.table + '-' + key;
@@ -602,6 +679,7 @@ function renderItemForm(view, def, row) {
 
   if (editing) {
     def.fields.forEach(([key, _label, type]) => {
+      if (type === 'select') return;
       const value = row[key];
       inputs[key].value = type === 'list' ? (value || []).join('\n') : (value || '');
     });
@@ -613,7 +691,10 @@ function renderItemForm(view, def, row) {
 
     const payload = {};
     def.fields.forEach(([key, _label, type]) => {
-      payload[key] = fieldValue(inputs[key], type);
+      payload[key] =
+        type === 'select'
+          ? (inputs[key].value ? Number(inputs[key].value) : null)
+          : fieldValue(inputs[key], type);
     });
     payload.visibility = visibility.value;
 
@@ -633,6 +714,246 @@ function renderItemForm(view, def, row) {
       renderListModule(view, def);
     }
   });
+}
+
+const MEDIA_TYPES = [
+  ['image', 'Imagen'],
+  ['document', 'Documento'],
+  ['certificate', 'Certificado'],
+  ['video', 'Video'],
+  ['audio', 'Audio']
+];
+
+function renderMediaTypeSelect(value) {
+  const select = el('select', 'module-input module-select');
+  MEDIA_TYPES.forEach(([key, label]) => {
+    const option = el('option', null, label);
+    option.value = key;
+    if (key === value) option.selected = true;
+    select.appendChild(option);
+  });
+  return select;
+}
+
+function formatBytes(bytes) {
+  if (!bytes) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + units[i];
+}
+
+const IMAGE_MAX_WIDTH = 1600;
+const IMAGE_QUALITY = 0.8;
+
+function loadImageBitmap(file) {
+  if (window.createImageBitmap) {
+    return createImageBitmap(file, { imageOrientation: 'from-image' });
+  }
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('No se pudo leer la imagen'));
+    };
+    img.src = url;
+  });
+}
+
+async function compressImage(file) {
+  try {
+    const image = await loadImageBitmap(file);
+    const scale = Math.min(1, IMAGE_MAX_WIDTH / image.width);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(image.width * scale));
+    canvas.height = Math.max(1, Math.round(image.height * scale));
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', IMAGE_QUALITY));
+    if (!blob || blob.size >= file.size) return null;
+    return blob;
+  } catch (_) {
+    return null;
+  }
+}
+
+function renderMediaModule(view, def) {
+  view.innerHTML = '';
+
+  if (!supabaseClient) {
+    view.appendChild(el('p', 'module-feedback module-feedback--error', 'Supabase no está disponible.'));
+    return;
+  }
+
+  const feedback = el('p', 'module-feedback');
+  feedback.hidden = true;
+
+  const form = el('form', 'module-form');
+  form.appendChild(el('label', 'module-label', 'Archivo'));
+  const fileInput = el('input');
+  fileInput.type = 'file';
+  fileInput.name = 'file';
+  fileInput.className = 'module-input';
+  form.appendChild(fileInput);
+
+  form.appendChild(el('label', 'module-label', 'Nombre'));
+  const nameInput = el('input');
+  nameInput.type = 'text';
+  nameInput.name = 'name';
+  nameInput.className = 'module-input';
+  form.appendChild(nameInput);
+
+  form.appendChild(el('label', 'module-label', 'Tipo'));
+  const typeSelect = renderMediaTypeSelect('document');
+  form.appendChild(typeSelect);
+
+  form.appendChild(el('label', 'module-label', 'Visibilidad'));
+  const visSelect = renderVisibilitySelect('public');
+  form.appendChild(visSelect);
+
+  const submit = el('button', 'btn', 'Subir a R2');
+  submit.type = 'submit';
+  const actions = el('div', 'module-actions');
+  actions.appendChild(submit);
+  form.appendChild(feedback);
+  form.appendChild(actions);
+  view.appendChild(form);
+
+  const listBox = el('div', 'module-media-list');
+  view.appendChild(listBox);
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    feedback.hidden = true;
+    const rawFile = fileInput.files[0];
+    if (!rawFile) {
+      showFeedback(feedback, 'Selecciona un archivo primero.', true);
+      return;
+    }
+
+    let file = rawFile;
+    let mimeType = file.type || 'application/octet-stream';
+    let compressionNote = '';
+    if (mimeType.startsWith('image/')) {
+      const compressed = await compressImage(file);
+      if (compressed) {
+        const before = file.size;
+        file = compressed;
+        mimeType = file.type || 'image/webp';
+        compressionNote = ' · WebP ' + formatBytes(before) + ' → ' + formatBytes(file.size);
+      }
+    }
+
+    submit.disabled = true;
+    submit.textContent = 'Subiendo...';
+    try {
+      const { data, error } = await supabaseClient.functions.invoke('media-upload', {
+        body: {
+          name: nameInput.value.trim() || rawFile.name,
+          type: typeSelect.value,
+          mime_type: mimeType,
+          visibility: visSelect.value
+        }
+      });
+      if (error || !data.ok) {
+        throw new Error(describeFunctionError(error, data));
+      }
+      const put = await fetch(data.upload_url, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': mimeType }
+      });
+      if (!put.ok) throw new Error('Fallo al subir el archivo: HTTP ' + put.status);
+
+      const { error: insertError } = await supabaseClient.from('media_assets').insert({
+        name: nameInput.value.trim() || rawFile.name,
+        type: typeSelect.value,
+        mime_type: mimeType,
+        provider: 'cloudflare_r2',
+        object_key: data.object_key,
+        visibility: visSelect.value,
+        size_bytes: file.size
+      });
+      if (insertError) throw insertError;
+
+      showFeedback(feedback, 'Archivo subido correctamente.' + compressionNote);
+      fileInput.value = '';
+      nameInput.value = '';
+      loadMediaList(listBox);
+    } catch (error) {
+      showFeedback(feedback, 'Error al subir: ' + error.message, true);
+    } finally {
+      submit.disabled = false;
+      submit.textContent = 'Subir a R2';
+    }
+  });
+
+  loadMediaList(listBox);
+}
+
+function loadMediaList(listBox) {
+  listBox.innerHTML = '';
+  listBox.appendChild(el('h3', 'module-subtitle', 'Medios existentes'));
+
+  supabaseClient
+    .from('media_assets')
+    .select('*')
+    .order('id', { ascending: false })
+    .then(({ data, error }) => {
+      if (error) {
+        listBox.appendChild(
+          el('p', 'module-feedback module-feedback--error', 'No se pudieron cargar los medios. ¿Ejecutaste supabase/schema.sql?')
+        );
+        return;
+      }
+
+      if (!data.length) {
+        listBox.appendChild(el('p', 'module-empty', 'No hay archivos todavía. Sube el primero arriba.'));
+        return;
+      }
+
+      const list = el('div', 'module-list');
+      data.forEach((asset) => {
+        const card = el('article', 'module-item');
+        card.appendChild(el('h3', 'module-item-title', asset.name || ('#' + asset.id)));
+        const badge = el('span', 'module-badge module-badge--' + asset.visibility, VISIBILITY_LABELS[asset.visibility] || asset.visibility);
+        card.appendChild(badge);
+        card.appendChild(el('p', 'module-item-meta', asset.type + ' · ' + asset.mime_type + ' · ' + formatBytes(asset.size_bytes)));
+        card.appendChild(el('p', 'module-item-meta', 'Clave R2: ' + asset.object_key));
+
+        const actions = el('div', 'module-item-actions');
+        const deleteButton = el('button', 'btn btn--small btn--danger', 'Eliminar');
+        deleteButton.type = 'button';
+        deleteButton.addEventListener('click', async () => {
+          if (!window.confirm('¿Eliminar este medio? Se borra el registro y el archivo en R2.')) return;
+          let r2Failed = false;
+          try {
+            const del = await supabaseClient.functions.invoke('media-delete', { body: { object_key: asset.object_key } });
+            r2Failed = Boolean(del.error) || !(del.data && del.data.ok);
+          } catch (error) {
+            r2Failed = true;
+          }
+          const { error: delError } = await supabaseClient.from('media_assets').delete().eq('id', asset.id);
+          if (delError) {
+            window.alert('Registro borrado en R2 pero falló la eliminación local: ' + delError.message);
+            return;
+          }
+          if (r2Failed) {
+            window.alert('El archivo se eliminó del registro, pero no se pudo borrar de R2. Revísalo en el dashboard de Cloudflare.');
+          }
+          loadMediaList(listBox);
+        });
+        actions.appendChild(deleteButton);
+        card.appendChild(actions);
+
+        list.appendChild(card);
+      });
+      listBox.appendChild(list);
+    });
 }
 
 function setLoginError(message) {

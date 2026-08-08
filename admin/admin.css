@@ -172,6 +172,12 @@
   margin-top: 12px;
 }
 
+.module-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
 .module-input {
   width: 100%;
   padding: 10px 12px;

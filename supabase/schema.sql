@@ -355,6 +355,12 @@ begin
     'skills', (select coalesce(jsonb_agg(to_jsonb(x) order by x.id), '[]'::jsonb) from (
         select id, category, items, visibility
         from skills where visibility in ('public', 'recruiter')) x),
+    'certifications', (select coalesce(jsonb_agg(to_jsonb(x) order by x.id), '[]'::jsonb) from (
+        select c.id, c.title, c.issuer, c.date, c.description, c.credential_id, c.visibility, c.media_asset_id,
+               m.type as media_type, m.name as media_name, m.visibility as media_visibility
+        from certifications c
+        left join media_assets m on m.id = c.media_asset_id
+        where c.visibility in ('public', 'recruiter')) x),
     'profile', (select to_jsonb(pr) from (
         select id,
           case when name_visibility in ('public', 'recruiter') then name else null end as name,
@@ -378,4 +384,129 @@ end;
 $$;
 
 grant execute on function get_recruiter_content(text) to anon, authenticated;
+
+-- ============================================================
+-- FASE 4: Media Gateway — activos multimedia y certificaciones
+-- ============================================================
+
+create table if not exists media_assets (
+  id bigint generated always as identity primary key,
+  name text not null default '',
+  type text not null default 'document'
+    check (type in ('image', 'document', 'certificate', 'video', 'audio')),
+  mime_type text not null default '',
+  provider text not null default 'cloudflare_r2',
+  object_key text not null default '',
+  visibility text not null default 'public'
+    check (visibility in ('public', 'recruiter', 'private')),
+  size_bytes bigint not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists certifications (
+  id bigint generated always as identity primary key,
+  title text not null default '',
+  issuer text not null default '',
+  date text not null default '',
+  description text not null default '',
+  credential_id text not null default '',
+  visibility text not null default 'public'
+    check (visibility in ('public', 'recruiter', 'private')),
+  media_asset_id bigint references media_assets(id) on delete set null
+);
+
+alter table media_assets enable row level security;
+alter table certifications enable row level security;
+
+-- anon solo ve los metadatos de activos públicos; el archivo siempre pasa por el gateway.
+drop policy if exists "public read media_assets" on media_assets;
+create policy "public read media_assets" on media_assets for select using (visibility = 'public');
+drop policy if exists "admin write media_assets" on media_assets;
+create policy "admin write media_assets" on media_assets for all
+  using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
+drop policy if exists "public read certifications" on certifications;
+create policy "public read certifications" on certifications for select using (visibility = 'public');
+drop policy if exists "admin write certifications" on certifications;
+create policy "admin write certifications" on certifications for all
+  using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
+-- Vista pública de certificaciones: oculta credential_id (solo para reclutadores).
+create or replace view certifications_public as
+select
+  c.id,
+  c.title,
+  c.issuer,
+  c.date,
+  c.description,
+  null::text as credential_id,
+  c.visibility,
+  c.media_asset_id,
+  m.type as media_type,
+  m.name as media_name,
+  m.visibility as media_visibility
+from certifications c
+left join media_assets m on m.id = c.media_asset_id;
+
+grant select on certifications_public to anon, authenticated;
+
+-- Entrega los datos de un activo solo si la visibilidad lo permite.
+-- La sesión de reclutador se valida aquí (mismo hashing que get_recruiter_content);
+-- el gateway firma después la URL temporal, nunca expone object_key al frontend.
+create or replace function get_media_asset(p_asset_id bigint, p_session_token text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_asset media_assets%rowtype;
+  v_session access_sessions%rowtype;
+begin
+  if p_asset_id is null then
+    return jsonb_build_object('ok', false, 'error', 'not_found');
+  end if;
+
+  select * into v_asset from media_assets where id = p_asset_id;
+  if not found then
+    return jsonb_build_object('ok', false, 'error', 'not_found');
+  end if;
+
+  if v_asset.visibility = 'public' then
+    return jsonb_build_object(
+      'ok', true,
+      'name', v_asset.name,
+      'mime_type', v_asset.mime_type,
+      'object_key', v_asset.object_key,
+      'visibility', v_asset.visibility
+    );
+  end if;
+
+  -- recruiter o private: requieren una sesión de reclutador válida.
+  if p_session_token !~ '^[0-9a-fA-F]{64}$' then
+    return jsonb_build_object('ok', false, 'error', 'forbidden');
+  end if;
+
+  select * into v_session
+  from access_sessions
+  where session_token_hash = encode(digest(decode(p_session_token, 'hex'), 'sha256'), 'hex')
+    and session_expires > now()
+  limit 1;
+
+  if not found then
+    return jsonb_build_object('ok', false, 'error', 'forbidden');
+  end if;
+
+  return jsonb_build_object(
+    'ok', true,
+    'name', v_asset.name,
+    'mime_type', v_asset.mime_type,
+    'object_key', v_asset.object_key,
+    'visibility', v_asset.visibility
+  );
+end;
+$$;
+
+grant execute on function get_media_asset(bigint, text) to anon, authenticated;
 

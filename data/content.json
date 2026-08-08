@@ -62,7 +62,7 @@
       "id": 1,
       "role": "Operario de produción",
       "company": "American Tropic Foods (ATF) S.A",
-      "period": "12/18/2025 - Actualidad",
+      "period": "12/08/2025 - Actualidad",
       "summary": "Participar en la producción y control de calidad, elaborando y manteniendo la documentación del área. Cumplir con los protocolos de seguridad, calidad e inocuidad, asegurando que toda la información operativa del área esté actualizada. Dominar los procedimientos para ejecutar las tareas con autonomía y criterio propio.",
       "tech": [
         "Excel Básico para registros."
@@ -81,18 +81,18 @@
   ],
   "education": [
     {
-      "id": 2,
-      "degree": "Sexto grado",
-      "institution": "CINDEA SAN ANTONIO DEL HUMO",
-      "period": "2021 - 2022",
-      "notes": "",
-      "visibility": "public"
-    },
-    {
       "id": 1,
       "degree": "Noveno grado",
       "institution": "CINDEA SAN ANTONIO DEL HUMO",
       "period": "2023 - 2024",
+      "notes": "",
+      "visibility": "public"
+    },
+    {
+      "id": 2,
+      "degree": "Sexto grado",
+      "institution": "CINDEA SAN ANTONIO DEL HUMO",
+      "period": "2021 - 2022",
       "notes": "",
       "visibility": "public"
     }
@@ -106,7 +106,7 @@
         "HTML",
         "CSS",
         "JavaScript",
-        "Supbase",
+        "Supabase",
         "GitHub Actions",
         "Python"
       ],
@@ -129,18 +129,6 @@
       "visibility": "public"
     },
     {
-      "id": 4,
-      "category": "Herramientas",
-      "items": [
-        "Git",
-        "GitHub",
-        "Supabase",
-        "VS Code",
-        "Automatización con scripts"
-      ],
-      "visibility": "public"
-    },
-    {
       "id": 3,
       "category": "Sistemas / Linux.",
       "items": [
@@ -149,6 +137,18 @@
         "Administración básica del sistema",
         "Permisos y procesos",
         "Uso de servicios y paquetes"
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": 4,
+      "category": "Herramientas",
+      "items": [
+        "Git",
+        "GitHub",
+        "Supabase",
+        "VS Code",
+        "Automatización con scripts"
       ],
       "visibility": "public"
     }
@@ -160,5 +160,34 @@
     "linkedin": "https://www.linkedin.com/in/jeyson-jarquin-b6983b340?utm_source=share_via&utm_content=profile&utm_medium=member_android",
     "website": "https://jos36912.github.io/portfolio/#inicio",
     "message": "Si mi perfil encaja con una oportunidad profesional, con gusto puedes contactarme para hablar sobre vacantes o colaboración."
-  }
+  },
+  "certifications": [
+    {
+      "id": 4,
+      "title": "Prueba2",
+      "issuer": "ninguna",
+      "date": "08/08/2026 - 08/08/2026",
+      "description": "una descripción",
+      "credential_id": null,
+      "visibility": "public",
+      "media_asset_id": 2,
+      "media_type": "image",
+      "media_name": "project12",
+      "media_visibility": "recruiter"
+    }
+  ],
+  "media_assets": [
+    {
+      "id": 1,
+      "name": "Nier Automata",
+      "type": "image",
+      "mime_type": "image/png",
+      "provider": "cloudflare_r2",
+      "object_key": "media/image/1786223811220-a6110284-1138-4abe-9b9a-deda15f18474.png",
+      "visibility": "public",
+      "size_bytes": 1549574,
+      "created_at": "2026-08-08T21:17:04.3589+00:00",
+      "updated_at": "2026-08-08T21:17:04.3589+00:00"
+    }
+  ]
 }

@@ -2,14 +2,17 @@
 """Sincroniza data/content.json con los datos actuales de Supabase.
 
 Preserva las secciones estaticas (site y sections) del archivo existente y
-reemplaza los datos (profile, experience, education, projects, skills, contact)
-con el contenido actual de las tablas en Supabase. Uso:
+reemplaza los datos (profile, experience, education, projects, skills, contact,
+certifications, media_assets) con el contenido actual de las tablas en Supabase.
+Uso:
 
     python3 sync-content.py
 
 Como respaldo publico, solo descarga contenido con visibilidad publica:
-profile y contact se leen desde las vistas profile_public/contact_public y
-las tablas de listas aplican RLS (anon solo ve filas 'public').
+profile y contact se leen desde las vistas profile_public/contact_public,
+certifications desde certifications_public y las tablas de listas aplican RLS
+(anon solo ve filas 'public'). media_assets solo expone los metadatos de los
+activos publicos; los archivos se sirven por el Media Gateway, nunca en bruto.
 """
 import json
 import re
@@ -29,6 +32,8 @@ TABLES = {
     'projects': 'projects',
     'skills': 'skills',
     'contact': 'contact_public',
+    'certifications': 'certifications_public',
+    'media_assets': 'media_assets',
 }
 SINGLE = {'profile_public', 'contact_public'}
 
@@ -43,7 +48,7 @@ def load_config(path):
 
 
 def fetch_rows(base_url, anon_key, table):
-    url = base_url + '/rest/v1/' + table + '?select=*'
+    url = base_url + '/rest/v1/' + table + '?select=*&order=id.asc'
     request = urllib.request.Request(url, headers={
         'apikey': anon_key,
         'Authorization': 'Bearer ' + anon_key,

@@ -10,6 +10,7 @@ const DEFAULT_SECTIONS = [
   { id: 'inicio', label: 'Inicio', type: 'hero' },
   { id: 'sobre-mi', label: 'Sobre mí', type: 'about' },
   { id: 'cv', label: 'Hoja de vida', type: 'cv' },
+  { id: 'certificaciones', label: 'Certificaciones', type: 'certifications' },
   { id: 'proyectos', label: 'Proyectos', type: 'projects' },
   { id: 'habilidades', label: 'Habilidades', type: 'skills' },
   { id: 'contacto', label: 'Contacto', type: 'contact' },
@@ -74,6 +75,10 @@ function sectionHasVisibleContent(section, data) {
 
   if (type === 'skills') {
     return (data.skills || []).some(itemVisibleForCurrent);
+  }
+
+  if (type === 'certifications') {
+    return (data.certifications || []).some(itemVisibleForCurrent);
   }
 
   if (type === 'contact') {
@@ -286,6 +291,120 @@ function renderSkills(sec, skills) {
   sec.appendChild(grid);
 }
 
+function mediaGatewayUrl(assetId, download) {
+  const config = window.CONFIG || {};
+  const base = config.MEDIA_GATEWAY_URL;
+  if (!base || !assetId) return null;
+  const url = new URL(base);
+  url.searchParams.set('asset_id', String(assetId));
+  if (download) url.searchParams.set('download', '1');
+  const session = getStoredSession();
+  if (session && session.session_token) {
+    url.searchParams.set('session_token', session.session_token);
+  }
+  return url.toString();
+}
+
+function mediaIsRestricted(mediaVisibility) {
+  return mediaVisibility && mediaVisibility !== 'public';
+}
+
+function openCertModal(cert) {
+  const overlay = el('div', 'cert-modal-overlay');
+  const modal = el('div', 'cert-modal');
+  modal.setAttribute('role', 'dialog');
+  modal.setAttribute('aria-modal', 'true');
+  modal.setAttribute('aria-label', cert.title);
+
+  const header = el('div', 'cert-modal-header');
+  header.appendChild(el('h3', 'cert-modal-title', cert.title));
+  const close = el('button', 'cert-modal-close', '×');
+  close.type = 'button';
+  close.setAttribute('aria-label', 'Cerrar');
+  close.addEventListener('click', closeCertModal);
+  header.appendChild(close);
+  modal.appendChild(header);
+
+  const body = el('div', 'cert-modal-body');
+
+  if (mediaIsRestricted(cert.media_visibility) && !isRecruiterActive()) {
+    body.appendChild(
+      el('div', 'cert-modal-notice',
+        'Este archivo solo está disponible para reclutadores. Ingresa tu token de acceso para verlo.')
+    );
+  } else {
+    const url = mediaGatewayUrl(cert.media_asset_id, false);
+    if (url) {
+      if (cert.media_type === 'image') {
+        const img = el('img', 'cert-modal-media');
+        img.src = url;
+        img.alt = 'Evidencia de la certificación';
+        img.loading = 'lazy';
+        body.appendChild(img);
+      } else {
+        const frame = el('iframe', 'cert-modal-media cert-modal-frame');
+        frame.src = url;
+        frame.title = 'Vista previa de la certificación';
+        frame.loading = 'lazy';
+        body.appendChild(frame);
+      }
+    }
+    const download = el('a', 'btn btn--small', 'Descargar');
+    download.href = mediaGatewayUrl(cert.media_asset_id, true);
+    download.target = '_blank';
+    download.rel = 'noopener noreferrer';
+    body.appendChild(download);
+  }
+
+  modal.appendChild(body);
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  const onKeydown = (event) => {
+    if (event.key === 'Escape') closeCertModal();
+  };
+  overlay._onKeydown = onKeydown;
+  document.addEventListener('keydown', onKeydown);
+  overlay.addEventListener('click', (event) => {
+    if (event.target === overlay) closeCertModal();
+  });
+
+  close.focus();
+}
+
+function closeCertModal() {
+  const overlay = document.querySelector('.cert-modal-overlay');
+  if (!overlay) return;
+  if (overlay._onKeydown) document.removeEventListener('keydown', overlay._onKeydown);
+  overlay.remove();
+}
+
+function renderCertifications(sec, certifications) {
+  const grid = el('div', 'certifications-grid');
+
+  certifications.filter(itemVisibleForCurrent).forEach((cert) => {
+    const card = el('article', 'certification-card');
+    markRecruiterItem(card, cert);
+    card.appendChild(el('h3', 'certification-title', cert.title));
+    card.appendChild(el('p', 'certification-meta', cert.issuer + ' · ' + cert.date));
+    if (cert.description) {
+      card.appendChild(el('p', 'certification-description', cert.description));
+    }
+    if (isRecruiterActive() && cert.credential_id) {
+      card.appendChild(el('p', 'certification-credential', 'ID de credencial: ' + cert.credential_id));
+    }
+    if (cert.media_asset_id) {
+      const open = el('button', 'btn btn--small', 'Mostrar certificación');
+      open.type = 'button';
+      open.addEventListener('click', () => openCertModal(cert));
+      card.appendChild(open);
+    }
+    grid.appendChild(card);
+  });
+
+  sec.appendChild(grid);
+}
+
 const SOCIAL_ICONS = {
   email:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>',
@@ -427,6 +546,7 @@ function buildExtendedData(content) {
     education: content.education || [],
     projects: content.projects || [],
     skills: content.skills || [],
+    certifications: content.certifications || [],
     profile: mergeObjectFields(publicData.profile, content.profile),
     contact: mergeObjectFields(publicData.contact, content.contact)
   };
@@ -559,6 +679,9 @@ function render(data) {
       case 'skills':
         renderSkills(sec, data.skills);
         break;
+      case 'certifications':
+        renderCertifications(sec, data.certifications);
+        break;
       case 'contact':
         renderContact(sec, data.contact);
         break;
@@ -599,7 +722,7 @@ function setupActiveNav(sections) {
 
 async function fetchSupabaseTable(table, single) {
   const config = window.CONFIG;
-  const url = config.SUPABASE_URL + '/rest/v1/' + table + '?select=*';
+  const url = config.SUPABASE_URL + '/rest/v1/' + table + '?select=*&order=id.asc';
   const headers = {
     apikey: config.SUPABASE_ANON_KEY,
     Authorization: 'Bearer ' + config.SUPABASE_ANON_KEY
@@ -619,20 +742,22 @@ function normalizeContent(data) {
     education: data.education || [],
     projects: data.projects || [],
     skills: data.skills || [],
+    certifications: data.certifications || [],
     contact: data.contact || {}
   };
 }
 
 async function loadSupabaseContent() {
-  const [profile, experience, education, projects, skills, contact] = await Promise.all([
+  const [profile, experience, education, projects, skills, contact, certifications] = await Promise.all([
     fetchSupabaseTable('profile_public', true),
     fetchSupabaseTable('experience'),
     fetchSupabaseTable('education'),
     fetchSupabaseTable('projects'),
     fetchSupabaseTable('skills'),
-    fetchSupabaseTable('contact_public', true)
+    fetchSupabaseTable('contact_public', true),
+    fetchSupabaseTable('certifications_public')
   ]);
-  return normalizeContent({ profile, experience, education, projects, skills, contact });
+  return normalizeContent({ profile, experience, education, projects, skills, contact, certifications });
 }
 
 async function loadContent() {

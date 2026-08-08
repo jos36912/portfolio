@@ -9,16 +9,19 @@ Una web personal profesional de una sola página, con diseño oscuro y contenido
 - Contenido persistido en **Supabase** (base de datos con RLS) con respaldo en `data/content.json`.
 - **Visibilidad segmentada por ítem**: cada fila de CV/educación/proyectos/habilidades y cada campo de perfil/contacto puede ser `public`, `recruiter` o `private`.
 - **Acceso para reclutadores por token temporal**: una sección pública permite ingresar un token; al validarlo el sitio re-renderiza el contenido ampliado fusionado en sus secciones y marca con una franja verde neón los ítems exclusivos de reclutador. La sesión dura 24 horas (o lo que defina el token) y se puede desactivar manualmente.
+- **Certificaciones**: sección con tarjetas de certificados (título, institución, fecha, descripción). El botón **"Mostrar certificación"** abre un modal con la vista previa del adjunto (imagen o PDF) y su descarga. Para reclutadores añade el ID de credencial. La visibilidad del adjunto se controla de forma independiente en **Medios** (`public` lo ve cualquiera; `recruiter`/`private` solo quien valide el token de reclutador).
+- **Media Gateway (Cloudflare R2)**: los archivos se guardan en un bucket privado y se entregan por URLs temporales firmadas (TTL 60 s) que el servidor genera tras validar la visibilidad. El navegador nunca ve la URL real del almacenamiento.
 - Panel de administración con inicio de sesión protegido (Supabase Auth).
-- Módulos del panel completos: **Perfil**, **Experiencia**, **Educación**, **Proyectos**, **Habilidades**, **Contacto** y **Tokens** (crear, editar y eliminar).
+- Módulos del panel completos: **Perfil**, **Experiencia**, **Educación**, **Certificaciones**, **Proyectos**, **Habilidades**, **Contacto**, **Medios** y **Tokens** (crear, editar y eliminar).
 - Generación de tokens de reclutador desde el panel: etiqueta, duración en horas, revocación manual y estado en vivo.
+- Subida de archivos (PDF, imágenes, etc.) desde el panel con visibilidad por activo.
 - Script `sync-content.py` para regenerar `data/content.json` desde Supabase, automatizado con **GitHub Actions** (se regenera solo en cada push y a diario).
 - Favicon propio (`assets/darkness.ico`).
 - Compatible con dispositivos móviles y escritorio.
 
 ## Próximas mejoras (futuras versiones)
 
-- Soporte para subir imágenes y documentos desde el panel.
+- Ocultar por completo el origen de R2 mediante streaming en Cloudflare Workers (ver `cambios/adr-media-gateway.md`).
 
 ## Estructura del proyecto
 
@@ -31,6 +34,9 @@ script.js          Carga el contenido (Supabase → fallback content.json) y ren
 style.css          Estilos y tema oscuro.
 supabase-config.js Configuración compartida de Supabase (URL + anon key).
 supabase/schema.sql  Esquema de la base de datos (tablas, RLS, vistas y funciones RPC).
+supabase/config.toml Configuración del CLI (funciones edge: media-gateway, media-upload, media-delete).
+supabase/functions/  Edge Functions (Media Gateway + admin de medios, sin dependencias externas).
+supabase/.env.local  Secrets locales para probar las funciones (gitignored).
 sync-content.py      Regenera data/content.json con los datos actuales de Supabase.
 admin/             Panel de administración (login + panel), en carpeta separada.
 admin/index.html   Página del panel (se accede en /admin/).
@@ -45,7 +51,8 @@ cambios/           Informes y propuestas de evolución del proyecto.
 - HTML5
 - CSS3
 - JavaScript
-- Supabase (Auth, Postgres/PostgREST con RLS)
+- Supabase (Auth, Postgres/PostgREST con RLS, Edge Functions)
+- Cloudflare R2 (almacenamiento privado de archivos con URLs temporales firmadas)
 - GitHub Actions
 
 ## Visibilidad del contenido
@@ -74,8 +81,34 @@ Cada elemento de contenido define quién puede verlo:
 
 - `validate_recruiter_token(p_token)` — valida un token y abre una sesión temporal (`access_sessions`).
 - `get_recruiter_content(p_session_token)` — devuelve el contenido ampliado (`public` + `recruiter`) solo para una sesión válida y no revocada.
+- `get_media_asset(p_asset_id, p_session_token)` — autoriza la entrega de un archivo por visibilidad (la usa el Media Gateway; el frontend no la invoca).
 
 Los tokens y las sesiones se almacenan como **SHA-256 de los bytes** del valor entregado; nunca en texto plano (ver `SECURITY.md`).
+
+## Media Gateway y archivos
+
+Los archivos viven en un bucket privado de Cloudflare R2. El flujo de entrega:
+
+```
+Frontend (GitHub Pages)
+   │  GET media-gateway?asset_id=…&session_token=…
+   ▼
+Edge Function media-gateway → RPC get_media_asset (valida visibilidad)
+   │  302 a presigned URL (TTL 60 s, SigV4 con Web Crypto)
+   ▼
+Cloudflare R2 (bucket privado)
+```
+
+- `media-gateway`: entrega archivos con URLs temporales firmadas (públicos y de reclutador).
+- `media-upload` / `media-delete`: usados por el panel para subir y borrar objetos (requieren sesión de admin).
+- El panel **Medios** sube el archivo (las imágenes se comprimen a WebP en el navegador, máx. 1600 px, calidad 0.8), y la certificación o proyecto lo enlaza por `media_asset_id`.
+- Desplegar las funciones (requiere `supabase login` y CLI):
+  ```bash
+  supabase link --project-ref <ref>
+  supabase secrets set R2_ENDPOINT=… R2_BUCKET=… R2_ACCESS_KEY_ID=… R2_SECRET_ACCESS_KEY=…
+  supabase functions deploy media-gateway media-upload media-delete --use-api
+  ```
+  El flag `--use-api` bundlea del lado servidor y evita el bundler local.
 
 ## Panel de administración
 
@@ -116,4 +149,4 @@ Para que el respaldo refleje los últimos cambios del panel, `content.json` se r
 python3 sync-content.py
 ```
 
-El script lee las 6 tablas (profile, experience, education, projects, skills, contact) con la anon key de `supabase-config.js` y conserva las secciones estáticas (`site` y `sections`). Solo descarga contenido público: profile y contact se leen desde las vistas `profile_public`/`contact_public` y las tablas de listas aplican RLS (anon solo ve filas `public`).
+El script lee las tablas (profile, experience, education, projects, skills, contact, certifications, media_assets) con la anon key de `supabase-config.js` y conserva las secciones estáticas (`site` y `sections`). Solo descarga contenido público: profile y contact se leen desde las vistas `profile_public`/`contact_public`, certifications desde `certifications_public`, y las tablas de listas aplican RLS (anon solo ve filas `public`). `media_assets` solo aporta metadatos de activos públicos; los archivos se sirven por el Media Gateway, nunca en bruto.
