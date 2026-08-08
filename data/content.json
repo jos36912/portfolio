@@ -44,41 +44,56 @@
   "profile": {
     "id": 1,
     "name": "Jeyson Jarquin Salgado",
-    "role": "Entusiasta a Cirberseguridad y desarrollo en python.",
-    "tagline": "Breve frase profesional que resuma tu valor y enfoque.",
+    "role": "Entusiasta de la ciberseguridad y del desarrollo en Python.",
+    "tagline": "Aprendiz constante, con interés en ciberseguridad, Redes, Linux y automatización con Python..",
     "photo": "",
-    "location": "",
+    "location": "Costa Rica",
     "summary": [
-      "Párrafo breve sobre ti: qué haces, qué te interesa y qué buscas profesionalmente.",
-      "Segundo párrafo opcional con información adicional relevante."
+      "Actualmente estoy enfocando mi aprendizaje y mis proyectos en el área de ciberseguridad, mientras continúo fortaleciendo mis habilidades técnicas y mi experiencia práctica en desarrollo y administración de contenido."
     ],
     "highlights": [
-      "Logro o característica destacada 1",
-      "Logro o característica destacada 2",
-      "Logro o característica destacada 3"
+      "Diseñé y mantengo una web personal con contenido administrable desde un panel privado.",
+      "Trabajo con Supabase, GitHub Pages y una arquitectura centrada en privacidad, exposición controlada.",
+      "Estoy desarrollando habilidades en Python, Redes, Linux y ciberseguridad."
     ]
   },
   "experience": [
     {
       "id": 1,
       "role": "Operario de produción",
-      "company": "American Tropic Foods ATF S.A",
-      "period": "12/18/2025 - 03/08/2026",
-      "summary": "Descripción breve de responsabilidades y logros.",
+      "company": "American Tropic Foods (ATF) S.A",
+      "period": "12/18/2025 - Actualidad",
+      "summary": "Participar en la producción y control de calidad, elaborando y manteniendo la documentación del área. Cumplir con los protocolos de seguridad, calidad e inocuidad, asegurando que toda la información operativa del área esté actualizada. Dominar los procedimientos para ejecutar las tareas con autonomía y criterio propio.",
       "tech": [
-        "Tecnología 1",
-        "Tecnología 2"
+        "Excel Básico para registros."
       ],
+      "visibility": "public"
+    },
+    {
+      "id": 4,
+      "role": "Experiencia en trabajos operativos y agrícolas",
+      "company": "Diferentes empleadores - Costa Rica",
+      "period": "Años anteriores",
+      "summary": "- Trabajo físico y operativo.\n- Adaptación a diferentes entornos laborales.\n- Cumplimiento de instrucciones y procedimientos.\n- Trabajo bajo presión y cumplimiento de horarios.\n- Responsabilidad sobre tareas asignadas.\n- Adaptación a diferentes equipos de trabajo.",
+      "tech": [],
       "visibility": "public"
     }
   ],
   "education": [
     {
+      "id": 2,
+      "degree": "Sexto grado",
+      "institution": "CINDEA SAN ANTONIO DEL HUMO",
+      "period": "2021 - 2022",
+      "notes": "",
+      "visibility": "public"
+    },
+    {
       "id": 1,
-      "degree": "Noveno aprobado",
-      "institution": "Institución",
-      "period": "AAAA – AAAA",
-      "notes": "Nota opcional (menciones, enfoque, etc.)",
+      "degree": "Noveno grado",
+      "institution": "CINDEA SAN ANTONIO DEL HUMO",
+      "period": "2023 - 2024",
+      "notes": "",
       "visibility": "public"
     }
   ],
@@ -92,43 +107,48 @@
         "CSS",
         "JavaScript",
         "Supbase",
-        "GitHub Actions"
+        "GitHub Actions",
+        "Python"
       ],
       "repo": "https://github.com/jos36912/portfolio",
       "demo": "https://jos36912.github.io/portfolio/",
-      "visibility": "public"
-    },
-    {
-      "id": 2,
-      "title": "N/A",
-      "description": "Descripción N/A",
-      "tech": [
-        "N/A",
-        "N/A"
-      ],
-      "repo": "N/A",
-      "demo": "N/A",
       "visibility": "public"
     }
   ],
   "skills": [
     {
-      "id": 1,
-      "category": "Categoría (ej. Frontend)",
+      "id": 2,
+      "category": "Desarrollo impulsado por AI.",
       "items": [
-        "Habilidad 1",
-        "Habilidad 2",
-        "Habilidad 3"
+        "Python",
+        "JavaScript",
+        "HTML5",
+        "CSS3",
+        "Consumo de APIs"
       ],
       "visibility": "public"
     },
     {
-      "id": 2,
-      "category": "Categoría (ej. Backend)",
+      "id": 4,
+      "category": "Herramientas",
       "items": [
-        "Habilidad 1",
-        "Habilidad 2",
-        "Habilidad 3"
+        "Git",
+        "GitHub",
+        "Supabase",
+        "VS Code",
+        "Automatización con scripts"
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": 3,
+      "category": "Sistemas / Linux.",
+      "items": [
+        "Fedora Linux",
+        "Línea de comandos",
+        "Administración básica del sistema",
+        "Permisos y procesos",
+        "Uso de servicios y paquetes"
       ],
       "visibility": "public"
     }
@@ -139,6 +159,6 @@
     "github": "https://github.com/jos36912",
     "linkedin": "https://www.linkedin.com/in/jeyson-jarquin-b6983b340?utm_source=share_via&utm_content=profile&utm_medium=member_android",
     "website": "https://jos36912.github.io/portfolio/#inicio",
-    "message": "Texto breve invitando a contactarte para oportunidades profesionales."
+    "message": "Si mi perfil encaja con una oportunidad profesional, con gusto puedes contactarme para hablar sobre vacantes o colaboración."
   }
 }
