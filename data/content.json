@@ -81,6 +81,14 @@
   ],
   "education": [
     {
+      "id": 2,
+      "degree": "Sexto grado",
+      "institution": "CINDEA SAN ANTONIO DEL HUMO",
+      "period": "2021 - 2022",
+      "notes": "",
+      "visibility": "public"
+    },
+    {
       "id": 1,
       "degree": "Noveno grado",
       "institution": "CINDEA SAN ANTONIO DEL HUMO",
