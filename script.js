@@ -24,7 +24,8 @@ let publicData = null;
 let extendedData = null;
 let recruiterExpiryTimer = null;
 let recruiterExpiryCheck = null;
-let recruiterExpiryNotice = false;
+let recruiterNotice = null;
+const RECRUITER_REVALIDATE_INTERVAL = 60000;
 
 function isRecruiterActive() {
   return Boolean(extendedData);
@@ -480,11 +481,41 @@ function clearRecruiterTimers() {
     clearInterval(recruiterExpiryCheck);
     recruiterExpiryCheck = null;
   }
+  window.removeEventListener('focus', revalidateRecruiterAccess);
+  document.removeEventListener('visibilitychange', onRecruiterVisibilityChange);
 }
 
 function expireRecruiterAccess() {
-  recruiterExpiryNotice = true;
+  recruiterNotice = 'expired';
   deactivateRecruiterAccess();
+}
+
+function revokeRecruiterAccess(reason) {
+  recruiterNotice = reason === 'revoked' ? 'revoked' : 'expired';
+  deactivateRecruiterAccess();
+}
+
+function onRecruiterVisibilityChange() {
+  if (document.visibilityState === 'visible') revalidateRecruiterAccess();
+}
+
+async function revalidateRecruiterAccess() {
+  const session = getStoredSession();
+  if (!session || !isRecruiterActive()) return;
+  try {
+    const content = await fetchRecruiterContent(session.session_token);
+    if (!content || !content.ok) {
+      revokeRecruiterAccess(content && content.error === 'revoked' ? 'revoked' : 'expired');
+      return;
+    }
+    const next = buildExtendedData(content);
+    if (JSON.stringify(next) !== JSON.stringify(extendedData)) {
+      extendedData = next;
+      render(extendedData);
+    }
+  } catch (_) {
+    // Transitorio (red); no desactivar.
+  }
 }
 
 function scheduleRecruiterExpiry() {
@@ -498,8 +529,14 @@ function scheduleRecruiterExpiry() {
   }
   recruiterExpiryTimer = setTimeout(expireRecruiterAccess, ms + 500);
   recruiterExpiryCheck = setInterval(() => {
-    if (!getStoredSession() && extendedData) expireRecruiterAccess();
-  }, 30000);
+    if (isRecruiterActive() && getStoredSession()) {
+      revalidateRecruiterAccess();
+    } else if (extendedData) {
+      expireRecruiterAccess();
+    }
+  }, RECRUITER_REVALIDATE_INTERVAL);
+  window.addEventListener('focus', revalidateRecruiterAccess);
+  document.addEventListener('visibilitychange', onRecruiterVisibilityChange);
 }
 
 async function callRpc(name, payload) {
@@ -596,10 +633,13 @@ function renderRecruiter(sec) {
   const submit = el('button', 'btn', 'Activar acceso');
   submit.type = 'submit';
   const feedback = el('p', 'recruiter-feedback');
-  feedback.hidden = !recruiterExpiryNotice;
-  if (recruiterExpiryNotice) {
-    feedback.textContent = 'El acceso ampliado caducó. Ingresa un token nuevo.';
-    recruiterExpiryNotice = false;
+  feedback.hidden = !recruiterNotice;
+  if (recruiterNotice) {
+    feedback.textContent =
+      recruiterNotice === 'revoked'
+        ? 'El acceso fue revocado por el propietario. Ingresa un token nuevo.'
+        : 'El acceso ampliado caducó. Ingresa un token nuevo.';
+    recruiterNotice = null;
   }
   form.appendChild(input);
   form.appendChild(submit);

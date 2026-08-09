@@ -59,8 +59,8 @@ Los archivos (certificados, PDF, imágenes) se guardan en un **bucket privado de
 1. El navegador pide `GET /functions/v1/media-gateway?asset_id=<id>&session_token=<token>`.
 2. La función llama al RPC `get_media_asset(asset_id, session_token)` (`security definer`):
    - `public` → entrega sin sesión.
-   - `recruiter` → exige sesión válida en `access_sessions` (mismo hashing SHA-256 que los demás RPC).
-   - `private` → igual que `recruiter`: exige sesión de reclutador válida (permite adjuntos solo-visibles para reclutadores).
+   - `recruiter` → exige sesión válida en `access_sessions` (mismo hashing SHA-256 que los demás RPC) **y token no revocado**.
+   - `private` → igual que `recruiter`: exige sesión de reclutador válida y no revocada (permite adjuntos solo-visibles para reclutadores).
 3. Si el RPC autoriza, la función firma una **presigned URL** contra R2 (SigV4, Web Crypto, sin dependencias) con **TTL de 60 segundos** y responde `302` hacia ella.
 
 ### Garantías
@@ -90,7 +90,7 @@ Los archivos (certificados, PDF, imágenes) se guardan en un **bucket privado de
 ## Manejo operacional
 
 - **Entrega**: los tokens se comparten por canal privado (correo/mensaje); no deben aparecer en la web pública ni en enlaces visibles.
-- **Revocación**: un token revocado deja de servir de inmediato (validate y get_content devuelven error).
+- **Revocación**: el panel llama a la RPC `revoke_recruiter_token(p_token_id)`, que marca `revoked_at` **y borra las sesiones** (`access_sessions`) de ese token. Deja de servir de inmediato: `validate`, `get_recruiter_content`, `get_media_asset` (gateway) y el frontend lo reflejan. Además, el sitio revalida la sesión en segundo plano (cada ~60 s y al volver a la pestaña) para ocultar el contenido ampliado sin recargar.
 - **Expiración**: tokens y sesiones tienen vencimiento propio; el sitio vuelve solo a modo público al expirar.
 - **Rotación**: al dudar de una filtración, revocar el token y emitir uno nuevo.
 - **No registrar tokens**: evitar volcar tokens o sesiones en logs, analítica o errores de consola.
