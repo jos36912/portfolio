@@ -11,6 +11,9 @@
   --shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   --font: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --max-width: 960px;
+  --carousel-duration: 40s;
+  --carousel-scale: 0.8;
+  --card-width: 320px;
 }
 
 * {
@@ -307,10 +310,77 @@ a:hover {
   color: var(--text);
 }
 
-.certifications-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 24px;
+.certifications-carousel {
+  overflow: hidden;
+  padding: 16px 0;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+}
+
+.cert-carousel-track {
+  display: flex;
+  width: max-content;
+  gap: 0;
+  animation: cert-marquee var(--carousel-duration) linear infinite;
+  will-change: transform;
+}
+
+@keyframes cert-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.certifications-carousel .certification-card {
+  flex: none;
+  width: var(--card-width);
+  margin-right: 24px;
+  position: relative;
+  transform: scale(var(--carousel-scale));
+  transform-origin: center;
+  transition: transform 0.25s ease;
+}
+
+.certifications-carousel.is-paused .cert-carousel-track {
+  animation-play-state: paused;
+}
+
+.certifications-carousel .certification-card.is-selected {
+  transform: scale(1);
+  z-index: 2;
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .certifications-carousel:hover .cert-carousel-track {
+    animation-play-state: paused;
+  }
+
+  .certifications-carousel:hover .certification-card:hover {
+    transform: scale(1);
+    z-index: 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .certifications-carousel {
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .cert-carousel-track {
+    animation: none;
+    width: max-content;
+  }
+
+  .certifications-carousel .certification-card {
+    transform: none;
+    scroll-snap-align: center;
+  }
 }
 
 .certification-card {

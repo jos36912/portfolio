@@ -380,30 +380,91 @@ function closeCertModal() {
   overlay.remove();
 }
 
-function renderCertifications(sec, certifications) {
-  const grid = el('div', 'certifications-grid');
+function buildCertCard(cert) {
+  const card = el('article', 'certification-card');
+  markRecruiterItem(card, cert);
+  card.appendChild(el('h3', 'certification-title', cert.title));
+  card.appendChild(el('p', 'certification-meta', cert.issuer + ' · ' + cert.date));
+  if (cert.description) {
+    card.appendChild(el('p', 'certification-description', cert.description));
+  }
+  if (isRecruiterActive() && cert.credential_id) {
+    card.appendChild(el('p', 'certification-credential', 'ID de credencial: ' + cert.credential_id));
+  }
+  if (cert.media_asset_id) {
+    const open = el('button', 'btn btn--small', 'Mostrar certificación');
+    open.type = 'button';
+    open.addEventListener('click', () => openCertModal(cert));
+    card.appendChild(open);
+  }
+  return card;
+}
 
-  certifications.filter(itemVisibleForCurrent).forEach((cert) => {
-    const card = el('article', 'certification-card');
-    markRecruiterItem(card, cert);
-    card.appendChild(el('h3', 'certification-title', cert.title));
-    card.appendChild(el('p', 'certification-meta', cert.issuer + ' · ' + cert.date));
-    if (cert.description) {
-      card.appendChild(el('p', 'certification-description', cert.description));
-    }
-    if (isRecruiterActive() && cert.credential_id) {
-      card.appendChild(el('p', 'certification-credential', 'ID de credencial: ' + cert.credential_id));
-    }
-    if (cert.media_asset_id) {
-      const open = el('button', 'btn btn--small', 'Mostrar certificación');
-      open.type = 'button';
-      open.addEventListener('click', () => openCertModal(cert));
-      card.appendChild(open);
-    }
-    grid.appendChild(card);
+function renderCertifications(sec, certifications) {
+  const visible = certifications.filter(itemVisibleForCurrent);
+  const carousel = el('div', 'certifications-carousel');
+  const track = el('div', 'cert-carousel-track');
+
+  visible.forEach((cert) => track.appendChild(buildCertCard(cert)));
+  visible.forEach((cert) => {
+    const copy = buildCertCard(cert);
+    copy.inert = true;
+    copy.setAttribute('aria-hidden', 'true');
+    track.appendChild(copy);
   });
 
-  sec.appendChild(grid);
+  carousel.appendChild(track);
+  sec.appendChild(carousel);
+  setupCertCarousel(carousel);
+}
+
+let certCarouselDocListener = null;
+
+function setupCertCarousel(container) {
+  const isTouch =
+    typeof window !== 'undefined' &&
+    typeof navigator !== 'undefined' &&
+    ('ontouchstart' in window || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0));
+  if (!isTouch) return;
+
+  let resumeTimer = null;
+
+  const clearSelection = () => {
+    container.querySelectorAll('.certification-card.is-selected').forEach((card) => {
+      card.classList.remove('is-selected');
+    });
+  };
+
+  const resume = () => {
+    if (resumeTimer) {
+      clearTimeout(resumeTimer);
+      resumeTimer = null;
+    }
+    container.classList.remove('is-paused');
+    clearSelection();
+  };
+
+  container.addEventListener('touchstart', (event) => {
+    if (resumeTimer) clearTimeout(resumeTimer);
+    container.classList.add('is-paused');
+    clearSelection();
+    const card = event.target.closest ? event.target.closest('.certification-card') : null;
+    if (card) card.classList.add('is-selected');
+    resumeTimer = setTimeout(resume, 2500);
+  });
+
+  if (!certCarouselDocListener) {
+    certCarouselDocListener = (event) => {
+      document.querySelectorAll('.certifications-carousel').forEach((c) => {
+        if (c.contains(event.target)) return;
+        c.classList.remove('is-paused');
+        c.querySelectorAll('.certification-card.is-selected').forEach((card) => {
+          card.classList.remove('is-selected');
+        });
+      });
+    };
+    document.addEventListener('touchstart', certCarouselDocListener);
+  }
 }
 
 const SOCIAL_ICONS = {
