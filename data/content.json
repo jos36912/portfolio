@@ -163,31 +163,31 @@
   },
   "certifications": [
     {
-      "id": 4,
-      "title": "Prueba2",
-      "issuer": "ninguna",
-      "date": "08/08/2026 - 08/08/2026",
-      "description": "una descripción",
+      "id": 5,
+      "title": "Manipulación de alimentos",
+      "issuer": "Grupo Meguz de Occidente S.A. / MG Capacitación Profesional",
+      "date": "10/11/2024 - 06/01/2024",
+      "description": "Certificación oficial en Manipulación de Alimentos de 20 horas, emitida por Grupo Meguz de Occidente S.A. y acreditada por el Instituto Nacional de Aprendizaje (INA). Formación orientada al cumplimiento de estándares de inocuidad, higiene y buenas prácticas en la cadena alimentaria",
       "credential_id": null,
       "visibility": "public",
-      "media_asset_id": 2,
-      "media_type": "image",
-      "media_name": "project12",
+      "media_asset_id": 3,
+      "media_type": "certificate",
+      "media_name": "manipulación de alimentos",
+      "media_visibility": "recruiter"
+    },
+    {
+      "id": 6,
+      "title": "Buenas Prácticas de Manufactura (BPM)",
+      "issuer": "Grupo Meguz de Occidente, S.A. (MG Capacitación Profesional)",
+      "date": "11/11/2024 - 07/03/2025",
+      "description": "Curso de aprovechamiento de 30 horas sobre Buenas Prácticas de Manufactura. Impartido del 11 de noviembre de 2024 al 07 de marzo de 2025. Otorgado el 12 de marzo de 2025 en San Ramón.",
+      "credential_id": null,
+      "visibility": "public",
+      "media_asset_id": 4,
+      "media_type": "certificate",
+      "media_name": "Buenas Prácticas de Manofactura",
       "media_visibility": "recruiter"
     }
   ],
-  "media_assets": [
-    {
-      "id": 1,
-      "name": "Nier Automata",
-      "type": "image",
-      "mime_type": "image/png",
-      "provider": "cloudflare_r2",
-      "object_key": "media/image/1786223811220-a6110284-1138-4abe-9b9a-deda15f18474.png",
-      "visibility": "public",
-      "size_bytes": 1549574,
-      "created_at": "2026-08-08T21:17:04.3589+00:00",
-      "updated_at": "2026-08-08T21:17:04.3589+00:00"
-    }
-  ]
+  "media_assets": []
 }
