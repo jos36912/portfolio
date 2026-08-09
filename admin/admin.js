@@ -528,11 +528,8 @@ function loadTokensList(listBox, def) {
           const revokeButton = el('button', 'btn btn--small btn--danger', 'Revocar');
           revokeButton.type = 'button';
           revokeButton.addEventListener('click', async () => {
-            if (!window.confirm('¿Revocar este token? Dejará de funcionar de inmediato.')) return;
-            const { error } = await supabaseClient
-              .from(def.table)
-              .update({ revoked_at: new Date().toISOString() })
-              .eq('id', token.id);
+            if (!window.confirm('¿Revocar este token? Dejará de funcionar de inmediato (sesiones incluidas).')) return;
+            const { error } = await supabaseClient.rpc('revoke_recruiter_token', { p_token_id: token.id });
             if (error) {
               window.alert('Error al revocar: ' + error.message);
             } else {

@@ -463,6 +463,7 @@ as $$
 declare
   v_asset media_assets%rowtype;
   v_session access_sessions%rowtype;
+  v_token recruiter_tokens%rowtype;
 begin
   if p_asset_id is null then
     return jsonb_build_object('ok', false, 'error', 'not_found');
@@ -483,7 +484,7 @@ begin
     );
   end if;
 
-  -- recruiter o private: requieren una sesión de reclutador válida.
+  -- recruiter o private: requieren una sesión de reclutador válida y no revocada.
   if p_session_token !~ '^[0-9a-fA-F]{64}$' then
     return jsonb_build_object('ok', false, 'error', 'forbidden');
   end if;
@@ -498,6 +499,11 @@ begin
     return jsonb_build_object('ok', false, 'error', 'forbidden');
   end if;
 
+  select * into v_token from recruiter_tokens where id = v_session.token_id;
+  if not found or v_token.revoked_at is not null then
+    return jsonb_build_object('ok', false, 'error', 'revoked');
+  end if;
+
   return jsonb_build_object(
     'ok', true,
     'name', v_asset.name,
@@ -509,4 +515,34 @@ end;
 $$;
 
 grant execute on function get_media_asset(bigint, text) to anon, authenticated;
+
+-- Revoca un token y mata sus sesiones de inmediato. Defensa en profundidad:
+-- además del check de revoked_at en get_media_asset/get_recruiter_content,
+-- las sesiones desaparecen en la fuente (también libera huecos de max_uses).
+create or replace function revoke_recruiter_token(p_token_id bigint)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_exists boolean;
+begin
+  if p_token_id is null then
+    return jsonb_build_object('ok', false, 'error', 'not_found');
+  end if;
+
+  select exists(select 1 from recruiter_tokens where id = p_token_id) into v_exists;
+  if not v_exists then
+    return jsonb_build_object('ok', false, 'error', 'not_found');
+  end if;
+
+  update recruiter_tokens set revoked_at = now() where id = p_token_id and revoked_at is null;
+  delete from access_sessions where token_id = p_token_id;
+
+  return jsonb_build_object('ok', true);
+end;
+$$;
+
+grant execute on function revoke_recruiter_token(bigint) to authenticated;
 
