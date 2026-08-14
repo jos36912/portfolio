@@ -253,6 +253,20 @@
   background: rgba(127, 29, 29, 0.15);
 }
 
+.module-badge--tech {
+  color: #6ea8fe;
+  border-color: #1d4ed8;
+  background: rgba(29, 78, 216, 0.15);
+}
+
+.module-input--checkbox {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
 .module-subtitle {
   font-size: 1rem;
   margin: 24px 0 12px;

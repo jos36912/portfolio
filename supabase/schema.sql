@@ -356,7 +356,7 @@ begin
         select id, category, items, visibility
         from skills where visibility in ('public', 'recruiter')) x),
     'certifications', (select coalesce(jsonb_agg(to_jsonb(x) order by x.id), '[]'::jsonb) from (
-        select c.id, c.title, c.issuer, c.date, c.description, c.credential_id, c.visibility, c.media_asset_id,
+        select c.id, c.title, c.issuer, c.date, c.description, c.credential_id, c.tech, c.visibility, c.media_asset_id,
                m.type as media_type, m.name as media_name, m.visibility as media_visibility
         from certifications c
         left join media_assets m on m.id = c.media_asset_id
@@ -411,6 +411,7 @@ create table if not exists certifications (
   date text not null default '',
   description text not null default '',
   credential_id text not null default '',
+  tech boolean not null default false,
   visibility text not null default 'public'
     check (visibility in ('public', 'recruiter', 'private')),
   media_asset_id bigint references media_assets(id) on delete set null
@@ -445,7 +446,8 @@ select
   c.media_asset_id,
   m.type as media_type,
   m.name as media_name,
-  m.visibility as media_visibility
+  m.visibility as media_visibility,
+  c.tech
 from certifications c
 left join media_assets m on m.id = c.media_asset_id;
 
