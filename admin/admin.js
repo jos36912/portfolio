@@ -121,6 +121,7 @@ const MODULES = {
       ['date', 'Fecha', 'text'],
       ['description', 'Descripción', 'textarea'],
       ['credential_id', 'ID de credencial (visible solo para reclutadores)', 'text'],
+      ['tech', 'Certificado tech (carrusel superior)', 'checkbox'],
       ['media_asset_id', 'Archivo (PDF/imagen subido en Medios)', 'select', 'media_assets']
     ]
   },
@@ -561,6 +562,10 @@ function buildItemCard(view, row, def) {
     );
   }
 
+  if (row.tech) {
+    card.appendChild(el('span', 'module-badge module-badge--tech', 'Tech'));
+  }
+
   const metaParts = (def.metaFields || [])
     .map((key) => row[key])
     .filter(Boolean);
@@ -597,6 +602,7 @@ function buildItemCard(view, row, def) {
 }
 
 function fieldValue(input, type) {
+  if (type === 'checkbox') return Boolean(input.checked);
   return type === 'list' ? splitLines(input.value) : input.value.trim();
 }
 
@@ -643,11 +649,12 @@ function renderItemForm(view, def, row) {
       return;
     }
 
-    const input = el(type === 'list' || type === 'textarea' ? 'textarea' : 'input');
+    const input = el(type === 'checkbox' ? 'input' : type === 'list' || type === 'textarea' ? 'textarea' : 'input');
     input.name = key;
     input.id = def.table + '-' + key;
-    input.className = 'module-input';
+    input.className = 'module-input' + (type === 'checkbox' ? ' module-input--checkbox' : '');
     if (type === 'text') input.type = 'text';
+    if (type === 'checkbox') input.type = 'checkbox';
     if (type === 'list' || type === 'textarea') input.rows = 4;
     form.appendChild(input);
     inputs[key] = input;
@@ -677,6 +684,10 @@ function renderItemForm(view, def, row) {
   if (editing) {
     def.fields.forEach(([key, _label, type]) => {
       if (type === 'select') return;
+      if (type === 'checkbox') {
+        inputs[key].checked = Boolean(row[key]);
+        return;
+      }
       const value = row[key];
       inputs[key].value = type === 'list' ? (value || []).join('\n') : (value || '');
     });

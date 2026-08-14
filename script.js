@@ -402,11 +402,26 @@ function buildCertCard(cert) {
 
 function renderCertifications(sec, certifications) {
   const visible = certifications.filter(itemVisibleForCurrent);
+  const tech = visible.filter((cert) => Boolean(cert.tech));
+  const general = visible.filter((cert) => !cert.tech);
+
+  if (tech.length) {
+    const group = el('div', 'certifications-group');
+    group.appendChild(el('h3', 'certifications-subtitle', 'Certificados Tech'));
+    group.appendChild(buildCertCarousel(tech));
+    sec.appendChild(group);
+  }
+  if (general.length) {
+    sec.appendChild(buildCertCarousel(general));
+  }
+}
+
+function buildCertCarousel(list) {
   const carousel = el('div', 'certifications-carousel');
   const track = el('div', 'cert-carousel-track');
 
-  visible.forEach((cert) => track.appendChild(buildCertCard(cert)));
-  visible.forEach((cert) => {
+  list.forEach((cert) => track.appendChild(buildCertCard(cert)));
+  list.forEach((cert) => {
     const copy = buildCertCard(cert);
     copy.inert = true;
     copy.setAttribute('aria-hidden', 'true');
@@ -414,57 +429,345 @@ function renderCertifications(sec, certifications) {
   });
 
   carousel.appendChild(track);
-  sec.appendChild(carousel);
-  setupCertCarousel(carousel);
+  createCertCarousel(carousel, track);
+  return carousel;
 }
 
+const certCarouselRegistry = [];
 let certCarouselDocListener = null;
 
-function setupCertCarousel(container) {
-  const isTouch =
-    typeof window !== 'undefined' &&
-    typeof navigator !== 'undefined' &&
-    ('ontouchstart' in window || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0));
-  if (!isTouch) return;
+function destroyCertCarousels() {
+  certCarouselRegistry.splice(0).forEach((car) => car.destroy());
+}
 
-  let resumeTimer = null;
+function createCertCarousel(container, track) {
+  const hasRaf = typeof requestAnimationFrame === 'function';
+  const hasDoc = typeof document !== 'undefined' && typeof document.addEventListener === 'function';
+  const hoverSupported = typeof matchMedia !== 'undefined' && matchMedia('(hover: hover)').matches;
+  const reduceMotion =
+    typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  const clearSelection = () => {
-    container.querySelectorAll('.certification-card.is-selected').forEach((card) => {
-      card.classList.remove('is-selected');
+  const cards = Array.prototype.slice.call(track.children || []);
+  const state = {
+    progress: 0,
+    half: 0,
+    speed: 0,
+    moving: false,
+    dragging: false,
+    held: false,
+    paused: false,
+    hovered: null,
+    rafId: null,
+    lastTs: 0,
+    visible: true,
+    resumeTimer: null,
+    startX: 0,
+    startProgress: 0,
+    pointerId: null,
+    pointerMoved: 0,
+    observer: null,
+    destroyed: false
+  };
+
+  function measure() {
+    state.half = typeof track.scrollWidth === 'number' && track.scrollWidth > 0 ? track.scrollWidth / 2 : (cards.length || 1) * 344;
+    state.speed = state.half / 40000;
+  }
+
+  function wrap(p) {
+    return state.half ? ((p % state.half) + state.half) % state.half : 0;
+  }
+
+  function setProgress(p) {
+    state.progress = p;
+    track.style.transform = 'translateX(' + -p + 'px)';
+  }
+
+  function cardCenter(card) {
+    return (card.offsetLeft || 0) + (card.offsetWidth || 320) / 2 - state.progress;
+  }
+
+  function containerCenter() {
+    return (container.offsetWidth || 960) / 2;
+  }
+
+  function focusScale(card) {
+    const cw = card.offsetWidth || 320;
+    const range = cw * 0.9;
+    const dist = Math.abs(cardCenter(card) - containerCenter());
+    return 0.8 + Math.max(0, 1 - dist / range) * 0.2;
+  }
+
+  function applyMoving() {
+    container.classList.add('is-moving');
+    cards.forEach((card) => {
+      card.style.transform = 'scale(' + focusScale(card).toFixed(3) + ')';
+      card.style.zIndex = '';
+      card.classList.remove('is-focus');
     });
-  };
+  }
 
-  const resume = () => {
-    if (resumeTimer) {
-      clearTimeout(resumeTimer);
-      resumeTimer = null;
+  function applyStatic(focusCard) {
+    container.classList.remove('is-moving');
+    cards.forEach((card) => {
+      card.style.transform = 'scale(' + (card === focusCard ? 1 : 0.8) + ')';
+      if (card === focusCard) {
+        card.classList.add('is-focus');
+        card.style.zIndex = '2';
+      } else {
+        card.classList.remove('is-focus');
+        card.style.zIndex = '';
+      }
+    });
+  }
+
+  function nearestCard() {
+    const c = containerCenter();
+    let best = null;
+    let bestDist = Infinity;
+    cards.forEach((card) => {
+      const d = Math.abs(cardCenter(card) - c);
+      if (d < bestDist) {
+        bestDist = d;
+        best = card;
+      }
+    });
+    return { card: best, dist: bestDist };
+  }
+
+  function stopLoop() {
+    if (state.rafId) {
+      cancelAnimationFrame(state.rafId);
+      state.rafId = null;
     }
-    container.classList.remove('is-paused');
-    clearSelection();
-  };
+    state.lastTs = 0;
+  }
 
-  container.addEventListener('touchstart', (event) => {
-    if (resumeTimer) clearTimeout(resumeTimer);
-    container.classList.add('is-paused');
-    clearSelection();
-    const card = event.target.closest ? event.target.closest('.certification-card') : null;
-    if (card) card.classList.add('is-selected');
-    resumeTimer = setTimeout(resume, 2500);
-  });
+  function setHeld(card) {
+    clearTimeout(state.resumeTimer);
+    state.resumeTimer = null;
+    stopLoop();
+    state.moving = false;
+    state.paused = false;
+    state.held = true;
+    container.classList.add('is-held');
+    applyStatic(card);
+  }
 
-  if (!certCarouselDocListener) {
+  function releaseHeld() {
+    if (!state.held) return;
+    state.held = false;
+    container.classList.remove('is-held');
+  }
+
+  function startMoving() {
+    if (reduceMotion || state.destroyed) return;
+    if (state.dragging || state.held || state.paused || state.moving) return;
+    state.moving = true;
+    if (hasRaf) {
+      state.lastTs = 0;
+      state.rafId = requestAnimationFrame(step);
+    }
+  }
+
+  function resumeAuto(delay) {
+    releaseHeld();
+    state.hovered = null;
+    state.paused = false;
+    clearTimeout(state.resumeTimer);
+    state.resumeTimer = null;
+    applyMoving();
+    if (delay != null && delay > 0) {
+      state.resumeTimer = setTimeout(startMoving, delay);
+    } else {
+      startMoving();
+    }
+  }
+
+  function deselect() {
+    resumeAuto(150);
+  }
+
+  function step(ts) {
+    if (state.destroyed || !state.visible) {
+      state.rafId = null;
+      return;
+    }
+    if (!state.lastTs) state.lastTs = ts;
+    const dt = Math.min(64, ts - state.lastTs);
+    state.lastTs = ts;
+
+    if (!state.dragging && !state.held && !state.paused) {
+      setProgress(wrap(state.progress + state.speed * dt));
+      applyMoving();
+    }
+
+    if (state.moving && !state.dragging && !state.held && !state.paused) {
+      state.rafId = requestAnimationFrame(step);
+    } else {
+      state.rafId = null;
+    }
+  }
+
+  function onPointerDown(event) {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    state.pointerId = event.pointerId;
+    state.dragging = true;
+    state.pointerMoved = 0;
+    state.startX = event.clientX;
+    state.startProgress = state.progress;
+    container.classList.add('is-dragging');
+    releaseHeld();
+    clearTimeout(state.resumeTimer);
+    state.resumeTimer = null;
+    state.paused = false;
+    stopLoop();
+    if (track.setPointerCapture) track.setPointerCapture(event.pointerId);
+    if (event.preventDefault) event.preventDefault();
+  }
+
+  function onPointerMove(event) {
+    if (!state.dragging || event.pointerId !== state.pointerId) return;
+    const dx = event.clientX - state.startX;
+    state.pointerMoved = Math.max(state.pointerMoved, Math.abs(dx));
+    setProgress(wrap(state.startProgress - dx));
+    applyMoving();
+    if (event.preventDefault) event.preventDefault();
+  }
+
+  function onPointerUp(event) {
+    if (!state.dragging || event.pointerId !== state.pointerId) return;
+    state.dragging = false;
+    container.classList.remove('is-dragging');
+    if (track.releasePointerCapture) track.releasePointerCapture(event.pointerId);
+
+    const onButton = event.target && event.target.closest && event.target.closest('button');
+    if (state.pointerMoved < 8) {
+      const card = event.target && event.target.closest ? event.target.closest('.certification-card') : null;
+      if (card && !onButton) {
+        setHeld(card);
+        return;
+      }
+      resumeAuto(0);
+      return;
+    }
+
+    const near = nearestCard();
+    if (near.card && near.dist < 0.45 * (near.card.offsetWidth || 320)) {
+      const from = state.progress;
+      const target = wrap(from + (cardCenter(near.card) - containerCenter()));
+      const start = performance.now();
+      const dur = 180;
+      const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+      const animate = (now) => {
+        const t = Math.min(1, (now - start) / dur);
+        setProgress(wrap(from + (target - from) * ease(t)));
+        if (t < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          setProgress(target);
+          setHeld(near.card);
+        }
+      };
+      requestAnimationFrame(animate);
+    } else {
+      resumeAuto(250);
+    }
+  }
+
+  function onMouseOver(event) {
+    if (state.dragging || state.held) return;
+    const card = event.target && event.target.closest ? event.target.closest('.certification-card') : null;
+    state.hovered = card || null;
+    state.paused = true;
+    stopLoop();
+    clearTimeout(state.resumeTimer);
+    state.resumeTimer = null;
+    applyStatic(card);
+  }
+
+  function onMouseLeave() {
+    if (state.dragging || state.held) return;
+    state.hovered = null;
+    state.paused = false;
+    resumeAuto(150);
+  }
+
+  if (hoverSupported) {
+    container.addEventListener('mouseover', onMouseOver);
+    container.addEventListener('mouseleave', onMouseLeave);
+  }
+
+  function onResize() {
+    measure();
+    setProgress(state.progress);
+  }
+
+  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+    window.addEventListener('resize', onResize);
+  }
+
+  if (typeof IntersectionObserver === 'function' && typeof window !== 'undefined' && 'IntersectionObserver' in window) {
+    state.observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        state.visible = entry.isIntersecting;
+        if (!state.visible) {
+          releaseHeld();
+          stopLoop();
+          state.moving = false;
+        } else if (state.moving || state.dragging || state.held || state.paused) {
+          state.lastTs = 0;
+        } else {
+          startMoving();
+        }
+      });
+    });
+    state.observer.observe(container);
+  }
+
+  if (hasDoc && !certCarouselDocListener) {
     certCarouselDocListener = (event) => {
       document.querySelectorAll('.certifications-carousel').forEach((c) => {
-        if (c.contains(event.target)) return;
-        c.classList.remove('is-paused');
-        c.querySelectorAll('.certification-card.is-selected').forEach((card) => {
-          card.classList.remove('is-selected');
-        });
+        if (typeof c.contains === 'function' && c.contains(event.target)) return;
+        if (c._certCarousel && typeof c._certCarousel.deselect === 'function') c._certCarousel.deselect();
       });
     };
-    document.addEventListener('touchstart', certCarouselDocListener);
+    document.addEventListener('pointerdown', certCarouselDocListener, true);
   }
+
+  container.addEventListener('pointerdown', onPointerDown);
+  container.addEventListener('pointermove', onPointerMove);
+  container.addEventListener('pointerup', onPointerUp);
+  container.addEventListener('pointercancel', onPointerUp);
+
+  container._certCarousel = {
+    releaseHeld,
+    deselect,
+    destroy() {
+      state.destroyed = true;
+      stopLoop();
+      clearTimeout(state.resumeTimer);
+      if (state.observer) state.observer.disconnect();
+      if (hoverSupported) {
+        container.removeEventListener('mouseover', onMouseOver);
+        container.removeEventListener('mouseleave', onMouseLeave);
+      }
+      container.removeEventListener('pointerdown', onPointerDown);
+      container.removeEventListener('pointermove', onPointerMove);
+      container.removeEventListener('pointerup', onPointerUp);
+      container.removeEventListener('pointercancel', onPointerUp);
+      if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function') {
+        window.removeEventListener('resize', onResize);
+      }
+    }
+  };
+
+  certCarouselRegistry.push(container._certCarousel);
+
+  measure();
+  setProgress(0);
+  applyStatic(null);
+  startMoving();
 }
 
 const SOCIAL_ICONS = {
@@ -753,6 +1056,7 @@ function render(data) {
 
   const existingHeader = document.querySelector('.site-header');
   if (existingHeader) existingHeader.remove();
+  destroyCertCarousels();
   app.innerHTML = '';
 
   const sections = data.sections.filter((section) => sectionHasVisibleContent(section, data));

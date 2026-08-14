@@ -44,10 +44,10 @@
   "profile": {
     "id": 1,
     "name": "Jeyson Jarquin Salgado",
-    "role": "Entusiasta de la ciberseguridad y del desarrollo en Python.",
-    "tagline": "Aprendiz constante, con interés en ciberseguridad, Redes, Linux y automatización con Python..",
+    "role": "Entusiasta de la ciberseguridad y del desarrollo en Python",
+    "tagline": "Aprendiz constante, con interés en ciberseguridad, Redes, Linux y automatización con Python.",
     "photo": "",
-    "location": "Costa Rica",
+    "location": null,
     "summary": [
       "Actualmente estoy enfocando mi aprendizaje y mis proyectos en el área de ciberseguridad, mientras continúo fortaleciendo mis habilidades técnicas y mi experiencia práctica en desarrollo y administración de contenido."
     ],
@@ -173,7 +173,8 @@
       "media_asset_id": 3,
       "media_type": "certificate",
       "media_name": "manipulación de alimentos",
-      "media_visibility": "recruiter"
+      "media_visibility": "recruiter",
+      "tech": false
     },
     {
       "id": 6,
@@ -186,7 +187,8 @@
       "media_asset_id": 4,
       "media_type": "certificate",
       "media_name": "Buenas Prácticas de Manofactura",
-      "media_visibility": "recruiter"
+      "media_visibility": "recruiter",
+      "tech": false
     },
     {
       "id": 7,
@@ -199,7 +201,8 @@
       "media_asset_id": 5,
       "media_type": "certificate",
       "media_name": "Servicio al cliente",
-      "media_visibility": "recruiter"
+      "media_visibility": "recruiter",
+      "tech": false
     },
     {
       "id": 8,
@@ -212,7 +215,8 @@
       "media_asset_id": 7,
       "media_type": "certificate",
       "media_name": "Manejo de inventarios",
-      "media_visibility": "recruiter"
+      "media_visibility": "recruiter",
+      "tech": false
     },
     {
       "id": 9,
@@ -225,7 +229,8 @@
       "media_asset_id": 8,
       "media_type": "certificate",
       "media_name": "Habilidades blandas",
-      "media_visibility": "recruiter"
+      "media_visibility": "recruiter",
+      "tech": false
     },
     {
       "id": 10,
@@ -238,7 +243,8 @@
       "media_asset_id": 6,
       "media_type": "certificate",
       "media_name": "Control de calidad",
-      "media_visibility": "recruiter"
+      "media_visibility": "recruiter",
+      "tech": false
     }
   ],
   "media_assets": [
