@@ -446,6 +446,7 @@ function createCertCarousel(container, track) {
   const hoverSupported = typeof matchMedia !== 'undefined' && matchMedia('(hover: hover)').matches;
   const reduceMotion =
     typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const HELD_RESUME_MS = 5000;
 
   const cards = Array.prototype.slice.call(track.children || []);
   const state = {
@@ -543,7 +544,7 @@ function createCertCarousel(container, track) {
     state.lastTs = 0;
   }
 
-  function setHeld(card) {
+  function beginHold(after) {
     clearTimeout(state.resumeTimer);
     state.resumeTimer = null;
     stopLoop();
@@ -551,7 +552,20 @@ function createCertCarousel(container, track) {
     state.paused = false;
     state.held = true;
     container.classList.add('is-held');
-    applyStatic(card);
+    if (after) after();
+    state.resumeTimer = setTimeout(function () {
+      resumeAuto(0);
+    }, HELD_RESUME_MS);
+  }
+
+  function setHeld(card) {
+    beginHold(function () {
+      applyStatic(card);
+    });
+  }
+
+  function park() {
+    beginHold(null);
   }
 
   function releaseHeld() {
@@ -671,7 +685,7 @@ function createCertCarousel(container, track) {
       };
       requestAnimationFrame(animate);
     } else {
-      resumeAuto(250);
+      park();
     }
   }
 
@@ -715,6 +729,8 @@ function createCertCarousel(container, track) {
           releaseHeld();
           stopLoop();
           state.moving = false;
+          clearTimeout(state.resumeTimer);
+          state.resumeTimer = null;
         } else if (state.moving || state.dragging || state.held || state.paused) {
           state.lastTs = 0;
         } else {
