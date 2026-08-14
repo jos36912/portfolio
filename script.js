@@ -639,7 +639,6 @@ function createCertCarousel(container, track) {
     state.paused = false;
     stopLoop();
     if (track.setPointerCapture) track.setPointerCapture(event.pointerId);
-    if (event.preventDefault) event.preventDefault();
   }
 
   function onPointerMove(event) {
