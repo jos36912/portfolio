@@ -576,7 +576,8 @@ function createCertCarousel(container, track) {
 
   function startMoving() {
     if (reduceMotion || state.destroyed) return;
-    if (state.dragging || state.held || state.paused || state.moving) return;
+    if (state.dragging || state.held || state.paused) return;
+    if (state.moving && state.rafId) return;
     state.moving = true;
     if (hasRaf) {
       state.lastTs = 0;
@@ -605,6 +606,7 @@ function createCertCarousel(container, track) {
   function step(ts) {
     if (state.destroyed || !state.visible) {
       state.rafId = null;
+      state.moving = false;
       return;
     }
     if (!state.lastTs) state.lastTs = ts;
@@ -729,9 +731,11 @@ function createCertCarousel(container, track) {
           releaseHeld();
           stopLoop();
           state.moving = false;
+          state.paused = false;
+          state.hovered = null;
           clearTimeout(state.resumeTimer);
           state.resumeTimer = null;
-        } else if (state.moving || state.dragging || state.held || state.paused) {
+        } else if (state.dragging || state.held || state.paused) {
           state.lastTs = 0;
         } else {
           startMoving();
