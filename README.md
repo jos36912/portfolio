@@ -29,6 +29,12 @@ El sitio usa el estándar **SemVer**: `MAJOR.MINOR.PATCH` con sufijo de pre-rele
 - **Pre-release**: las etapas siguen el orden `alpha < beta < rc < estable`; los números de candidato se incrementan por build (`0.9.0-beta.1` → `0.9.0-beta.2`). La versión `0.9.0` estable llega cuando se decide liberar el candidato beta.
 - En git cada release se marca con un tag con prefijo `v` (`v0.9.0-beta.1`); la "v" es convención de tags, no parte del estándar.
 
+## Licencia
+
+- **Código** (`script.js`, `style.css`, `admin/`, Edge Functions, `supabase/*.sql`, workflows, `sync-content.py`, etc.): licencia **MIT** (ver `LICENSE`). Puedes reutilizarlo con atribución.
+- **Contenido personal — todos los derechos reservados**: `data/content.json` (CV, textos y datos personales), fotografías, certificados adjuntos, la marca y el diseño visual de esta web no pueden reutilizarse ni distribuirse sin permiso expreso. El código MIT no autoriza a copiar el contenido que esta web muestra.
+- Las librerías vendored (`assets/vendor/supabase-js.min.js`, `assets/vendor/sha256.js`) conservan sus propias licencias de terceros.
+
 ## Próximas mejoras (futuras versiones)
 
 - Ocultar por completo el origen de R2 mediante streaming en Cloudflare Workers (ver `cambios/adr-media-gateway.md`).
