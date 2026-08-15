@@ -21,7 +21,7 @@ Una web personal profesional de una sola página, con diseño oscuro y contenido
 
 ## Versionado
 
-El sitio usa el estándar **SemVer**: `MAJOR.MINOR.PATCH` con sufijo de pre-release cuando aplica. La versión actual es **`0.9.0-beta.1`** y se muestra en el pie de página de `index.html` (único lugar visible; el workflow de `content.json` no lo toca).
+El sitio usa el estándar **SemVer**: `MAJOR.MINOR.PATCH` con sufijo de pre-release cuando aplica. La versión actual es **`0.9.0-beta.2`** y se muestra en el pie de página de `index.html` (único lugar visible; el workflow de `content.json` no lo toca).
 
 - **MAJOR** sube con cambios que rompen lo anterior o al alcanzar la versión estable `1.0.0`.
 - **MINOR** sube al agregar funcionalidades nuevas (`0.9.0` → `0.10.0`).
@@ -159,4 +159,4 @@ Para que el respaldo refleje los últimos cambios del panel, `content.json` se r
 python3 sync-content.py
 ```
 
-El script lee las tablas (profile, experience, education, projects, skills, contact, certifications, media_assets) con la anon key de `supabase-config.js` y conserva las secciones estáticas (`site` y `sections`). Solo descarga contenido público: profile y contact se leen desde las vistas `profile_public`/`contact_public`, certifications desde `certifications_public`, y las tablas de listas aplican RLS (anon solo ve filas `public`). `media_assets` solo aporta metadatos de activos públicos; los archivos se sirven por el Media Gateway, nunca en bruto.
+El script lee las tablas (profile, experience, education, projects, skills, contact, certifications, media_assets) con la anon key de `supabase-config.js` y conserva las secciones estáticas (`site` y `sections`). Solo descarga contenido público: profile y contact se leen desde las vistas `profile_public`/`contact_public`, certifications desde `certifications_public`, las tablas de listas aplican RLS (anon solo ve filas `public`) y `media_assets` se lee desde la vista `media_assets_public` (metadatos sin `object_key`); los archivos se sirven por el Media Gateway, nunca en bruto.

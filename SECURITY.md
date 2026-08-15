@@ -41,14 +41,15 @@ Modelo de seguridad del portfolio: contenido de acceso graduado con Supabase (Po
 | `profile` | sin acceso directo | todo |
 | `contact` | sin acceso directo | todo |
 | `experience`, `education`, `projects`, `skills` | solo filas `visibility = 'public'` | todo |
-| `certifications` | solo filas `visibility = 'public'` | todo |
-| `media_assets` | solo metadatos de filas `public` | todo |
+| `certifications` | nada (usa la vista `certifications_public`) | todo |
+| `media_assets` | nada (usa la vista `media_assets_public` sin `object_key`) | todo |
 | `recruiter_tokens` | nada | todo |
 | `access_sessions` | nada | lectura |
 
-- El sitio público lee **vistas** (`profile_public`, `contact_public`, `certifications_public`) que enmascaran con `CASE` cada campo cuya visibilidad no sea `public`. Aunque una fila sea legible por anon, los campos privados llegan como `null`/`{}`.
-- `certifications_public` oculta siempre `credential_id`; el sitio de reclutador lo recibe vía `get_recruiter_content`. También expone `media_visibility` (la visibilidad del adjunto) para que el frontend sepa si puede previsualizarlo sin token.
+- El sitio público lee **vistas** (`profile_public`, `contact_public`, `certifications_public`, `media_assets_public`) que enmascaran con `CASE` cada campo cuya visibilidad no sea `public`. Aunque una fila sea legible por anon, los campos privados llegan como `null`/`{}`.
+- Las **tablas base** (`certifications`, `media_assets`) no son legibles por anon: el acceso público pasa siempre por vistas sin datos sensibles (`certifications_public` oculta `credential_id`; `media_assets_public` omite `object_key`). El panel y las RPC (`security definer`) conservan acceso.
 - `authenticated` corresponde únicamente al propietario: el sign-up público está desactivado y el acceso se hace con correo y contraseña.
+- **Recordatorio (F4)**: las políticas `auth.role() = 'authenticated'` y `requireAdmin` de las Edge Functions aceptan *cualquier* usuario autenticado, no un id/email fijo. Hoy el único usuario es el propietario, pero **si en el futuro se agrega otro usuario**, restringir el acceso a un allowlist del propietario (verificar `auth.uid()` en las políticas y el email en `requireAdmin`).
 
 ## Media Gateway (Cloudflare R2)
 

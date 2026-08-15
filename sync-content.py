@@ -11,8 +11,9 @@ Uso:
 Como respaldo publico, solo descarga contenido con visibilidad publica:
 profile y contact se leen desde las vistas profile_public/contact_public,
 certifications desde certifications_public y las tablas de listas aplican RLS
-(anon solo ve filas 'public'). media_assets solo expone los metadatos de los
-activos publicos; los archivos se sirven por el Media Gateway, nunca en bruto.
+(anon solo ve filas 'public'). media_assets se lee desde la vista
+media_assets_public (metadatos sin object_key); los archivos se sirven por el
+Media Gateway, nunca en bruto.
 """
 import json
 import re
@@ -33,7 +34,7 @@ TABLES = {
     'skills': 'skills',
     'contact': 'contact_public',
     'certifications': 'certifications_public',
-    'media_assets': 'media_assets',
+    'media_assets': 'media_assets_public',
 }
 SINGLE = {'profile_public', 'contact_public'}
 

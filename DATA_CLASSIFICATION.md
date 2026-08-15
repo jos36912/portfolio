@@ -6,7 +6,7 @@ Definición de los tres niveles de visibilidad del contenido y qué debe ir en c
 
 | Nivel | Acceso | Se sirve a través de |
 |---|---|---|
-| `public` | Cualquier visitante | Tablas (RLS) y vistas `profile_public` / `contact_public` / `certifications_public` |
+| `public` | Cualquier visitante | Vistas `profile_public` / `contact_public` / `certifications_public` / `media_assets_public` (las tablas base de `certifications` y `media_assets` no son legibles por anon) |
 | `recruiter` | Quien valide un token y tenga sesión vigente | RPC `get_recruiter_content` con sesión válida |
 | `private` | Solo el propietario (panel de administración) | Panel autenticado; no se expone por REST público |
 
@@ -15,7 +15,7 @@ Definición de los tres niveles de visibilidad del contenido y qué debe ir en c
 - **Listas** (`experience`, `education`, `projects`, `skills`, `certifications`): columna `visibility` por fila (`public` | `recruiter` | `private`).
 - **Perfil** (`profile`): visibilidad por campo — `name_visibility`, `role_visibility`, `tagline_visibility`, `photo_visibility`, `location_visibility`, `summary_visibility`, `highlights_visibility`.
 - **Contacto** (`contact`): visibilidad por campo — `email_visibility`, `github_visibility`, `linkedin_visibility`, `website_visibility`, `message_visibility`.
-- **Medios** (`media_assets`): columna `visibility` por archivo. El **metadato público** (nombre/tipo) puede ser legible, pero el **archivo** solo se sirve a través del Media Gateway, que valida sesión: `public` sin token; `recruiter` **y `private`** con sesión de reclutador válida. En certificaciones, el adjunto expone su visibilidad como `media_visibility`.
+- **Medios** (`media_assets`): columna `visibility` por archivo. El **metadato público** (nombre/tipo/tamaño) se sirve solo vía la vista `media_assets_public` (nunca `object_key`), pero el **archivo** solo se sirve a través del Media Gateway, que valida sesión: `public` sin token; `recruiter` **y `private`** con sesión de reclutador válida. En certificaciones, el adjunto expone su visibilidad como `media_visibility`.
 - **Datos de sesión** (`access_sessions`, `recruiter_tokens`): siempre `private`; solo lectura para el propietario.
 
 ## Qué poner en cada nivel
