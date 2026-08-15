@@ -19,6 +19,16 @@ Una web personal profesional de una sola página, con diseño oscuro y contenido
 - Favicon propio (`assets/darkness.ico`).
 - Compatible con dispositivos móviles y escritorio.
 
+## Versionado
+
+El sitio usa el estándar **SemVer**: `MAJOR.MINOR.PATCH` con sufijo de pre-release cuando aplica. La versión actual es **`0.9.0-beta.1`** y se muestra en el pie de página de `index.html` (único lugar visible; el workflow de `content.json` no lo toca).
+
+- **MAJOR** sube con cambios que rompen lo anterior o al alcanzar la versión estable `1.0.0`.
+- **MINOR** sube al agregar funcionalidades nuevas (`0.9.0` → `0.10.0`).
+- **PATCH** sube con correcciones de errores (`0.9.0` → `0.9.1`).
+- **Pre-release**: las etapas siguen el orden `alpha < beta < rc < estable`; los números de candidato se incrementan por build (`0.9.0-beta.1` → `0.9.0-beta.2`). La versión `0.9.0` estable llega cuando se decide liberar el candidato beta.
+- En git cada release se marca con un tag con prefijo `v` (`v0.9.0-beta.1`); la "v" es convención de tags, no parte del estándar.
+
 ## Próximas mejoras (futuras versiones)
 
 - Ocultar por completo el origen de R2 mediante streaming en Cloudflare Workers (ver `cambios/adr-media-gateway.md`).
