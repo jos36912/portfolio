@@ -447,6 +447,7 @@ function createCertCarousel(container, track) {
   const reduceMotion =
     typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
   const HELD_RESUME_MS = 5000;
+  const DRAG_SLOP = 8;
 
   const cards = Array.prototype.slice.call(track.children || []);
   const state = {
@@ -466,6 +467,8 @@ function createCertCarousel(container, track) {
     startProgress: 0,
     pointerId: null,
     pointerMoved: 0,
+    captured: false,
+    didDrag: false,
     observer: null,
     destroyed: false
   };
@@ -630,6 +633,8 @@ function createCertCarousel(container, track) {
     state.pointerId = event.pointerId;
     state.dragging = true;
     state.pointerMoved = 0;
+    state.captured = false;
+    state.didDrag = false;
     state.startX = event.clientX;
     state.startProgress = state.progress;
     container.classList.add('is-dragging');
@@ -638,13 +643,23 @@ function createCertCarousel(container, track) {
     state.resumeTimer = null;
     state.paused = false;
     stopLoop();
-    if (track.setPointerCapture) track.setPointerCapture(event.pointerId);
   }
 
   function onPointerMove(event) {
     if (!state.dragging || event.pointerId !== state.pointerId) return;
     const dx = event.clientX - state.startX;
     state.pointerMoved = Math.max(state.pointerMoved, Math.abs(dx));
+    if (state.pointerMoved >= DRAG_SLOP) {
+      state.didDrag = true;
+      if (!state.captured && track.setPointerCapture) {
+        try {
+          track.setPointerCapture(event.pointerId);
+          state.captured = true;
+        } catch (err) {
+          state.captured = false;
+        }
+      }
+    }
     setProgress(wrap(state.startProgress - dx));
     applyMoving();
     if (event.preventDefault) event.preventDefault();
@@ -654,10 +669,13 @@ function createCertCarousel(container, track) {
     if (!state.dragging || event.pointerId !== state.pointerId) return;
     state.dragging = false;
     container.classList.remove('is-dragging');
-    if (track.releasePointerCapture) track.releasePointerCapture(event.pointerId);
+    if (state.captured) {
+      if (track.releasePointerCapture) track.releasePointerCapture(event.pointerId);
+      state.captured = false;
+    }
 
     const onButton = event.target && event.target.closest && event.target.closest('button');
-    if (state.pointerMoved < 8) {
+    if (state.pointerMoved < DRAG_SLOP) {
       const card = event.target && event.target.closest ? event.target.closest('.certification-card') : null;
       if (card && !onButton) {
         setHeld(card);
@@ -754,10 +772,19 @@ function createCertCarousel(container, track) {
     document.addEventListener('pointerdown', certCarouselDocListener, true);
   }
 
+  function onContainerClick(event) {
+    if (state.didDrag) {
+      event.preventDefault();
+      event.stopPropagation();
+      state.didDrag = false;
+    }
+  }
+
   container.addEventListener('pointerdown', onPointerDown);
   container.addEventListener('pointermove', onPointerMove);
   container.addEventListener('pointerup', onPointerUp);
   container.addEventListener('pointercancel', onPointerUp);
+  container.addEventListener('click', onContainerClick, true);
 
   container._certCarousel = {
     releaseHeld,
@@ -775,6 +802,7 @@ function createCertCarousel(container, track) {
       container.removeEventListener('pointermove', onPointerMove);
       container.removeEventListener('pointerup', onPointerUp);
       container.removeEventListener('pointercancel', onPointerUp);
+      container.removeEventListener('click', onContainerClick, true);
       if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function') {
         window.removeEventListener('resize', onResize);
       }
