@@ -253,12 +253,8 @@
       "name": "Introducción a Cisco Packet Tracer",
       "type": "certificate",
       "mime_type": "application/pdf",
-      "provider": "cloudflare_r2",
-      "object_key": "media/certificate/1786287496971-6ce30409-ebe6-40bb-8772-90278f64bff3.pdf",
       "visibility": "public",
-      "size_bytes": 223373,
-      "created_at": "2026-08-09T14:58:20.13514+00:00",
-      "updated_at": "2026-08-09T14:58:20.13514+00:00"
+      "size_bytes": 223373
     }
   ]
 }
