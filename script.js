@@ -1148,6 +1148,7 @@ function render(data) {
   });
 
   setupActiveNav(sections);
+  initRevealAnimations();
 }
 
 function setupActiveNav(sections) {
@@ -1169,6 +1170,31 @@ function setupActiveNav(sections) {
   sections.forEach((section) => {
     const node = document.getElementById(section.id);
     if (node) observer.observe(node);
+  });
+}
+
+const revealObserver = new IntersectionObserver(
+  (entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible');
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  },
+  { threshold: 0.08, rootMargin: '0px 0px -40px 0px' }
+);
+
+function initRevealAnimations() {
+  if (typeof IntersectionObserver === 'undefined') return;
+  const reduceMotion =
+    typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduceMotion) return;
+
+  app.querySelectorAll('.section, .project-card, .timeline-entry, .skill-group').forEach((node) => {
+    if (node.classList.contains('is-visible') || node.closest('.certifications-carousel')) return;
+    node.classList.add('reveal');
+    revealObserver.observe(node);
   });
 }
 

@@ -5,7 +5,7 @@ Una web personal profesional de una sola página, con diseño oscuro y contenido
 ## Características actuales
 
 - Una sola página con navegación por secciones (Inicio, Sobre mí, Hoja de vida, Proyectos, Habilidades, Contacto, Reclutador).
-- Tema oscuro, limpio y responsive.
+- Tema oscuro con identidad visual propia: acento teal, capas de fondo (ruido sutil + grid técnico enmascarado), micro-interacciones de hover (elevación y glow) y animación de entrada por scroll. Respetan `prefers-reduced-motion` y no interfieren con los carruseles.
 - Contenido persistido en **Supabase** (base de datos con RLS) con respaldo en `data/content.json`.
 - **Visibilidad segmentada por ítem**: cada fila de CV/educación/proyectos/habilidades y cada campo de perfil/contacto puede ser `public`, `recruiter` o `private`.
 - **Acceso para reclutadores por token temporal**: una sección pública permite ingresar un token; al validarlo el sitio re-renderiza el contenido ampliado fusionado en sus secciones y marca con una franja verde neón los ítems exclusivos de reclutador. La sesión dura 24 horas (o lo que defina el token) y se puede desactivar manualmente. Si el token se revoca, el sitio lo detecta en segundo plano (~60 s o al volver a la pestaña) y oculta el contenido ampliado sin recargar.
@@ -21,7 +21,7 @@ Una web personal profesional de una sola página, con diseño oscuro y contenido
 
 ## Versionado
 
-El sitio usa el estándar **SemVer**: `MAJOR.MINOR.PATCH` con sufijo de pre-release cuando aplica. La versión actual es **`0.9.0-beta.2`** y se muestra en el pie de página de `index.html` (único lugar visible; el workflow de `content.json` no lo toca).
+El sitio usa el estándar **SemVer**: `MAJOR.MINOR.PATCH` con sufijo de pre-release cuando aplica. La versión actual es **`0.9.0-beta.3`** y se muestra en el pie de página de `index.html` (único lugar visible; el workflow de `content.json` no lo toca).
 
 - **MAJOR** sube con cambios que rompen lo anterior o al alcanzar la versión estable `1.0.0`.
 - **MINOR** sube al agregar funcionalidades nuevas (`0.9.0` → `0.10.0`).
