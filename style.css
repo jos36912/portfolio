@@ -7,14 +7,16 @@
   --border-hover: #3c4d63;
   --text: #e8edf4;
   --text-muted: #8b95a5;
-  --accent: #2dd4bf;
-  --accent-strong: #14b8a6;
-  --accent-dim: rgba(45, 212, 191, 0.14);
-  --accent-glow: rgba(45, 212, 191, 0.55);
+  --accent: #22d3ee;
+  --accent-strong: #06b6d4;
+  --accent-dim: rgba(34, 211, 238, 0.14);
+  --accent-glow: rgba(34, 211, 238, 0.16);
+  --accent-border: rgba(34, 211, 238, 0.45);
+  --grid-line: rgba(34, 211, 238, 0.5);
   --recruiter-accent: #39ff14;
   --radius: 12px;
   --shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
-  --shadow-glow: 0 0 24px var(--accent-glow);
+  --shadow-glow: 0 8px 24px -10px var(--accent-glow);
   --font: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --max-width: 960px;
   --card-width: 320px;
@@ -56,8 +58,8 @@ body::after {
   z-index: 0;
   pointer-events: none;
   opacity: 0.22;
-  background-image: linear-gradient(to right, rgba(45, 212, 191, 0.5) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(45, 212, 191, 0.5) 1px, transparent 1px);
+  background-image: linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
   background-size: 42px 42px;
   -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 40%, #000 0%, transparent 75%);
   mask-image: radial-gradient(ellipse 80% 80% at 50% 40%, #000 0%, transparent 75%);
@@ -364,7 +366,7 @@ a:hover {
 .timeline-entry:hover,
 .project-card:hover,
 .skill-group:hover {
-  border-color: var(--border-hover);
+  border-color: var(--accent-border);
   background: var(--surface-hover);
   transform: translateY(-4px);
   box-shadow: var(--shadow-glow);
@@ -422,9 +424,8 @@ a:hover {
 }
 
 .certifications-carousel .certification-card:hover {
-  border-color: var(--accent-strong);
+  border-color: var(--accent-border);
   background: var(--surface-hover);
-  box-shadow: var(--shadow-glow);
 }
 
 .certifications-carousel .certification-card.is-focus {
