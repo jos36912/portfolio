@@ -1,18 +1,19 @@
 :root {
-  --bg: #0a0c10;
-  --bg-alt: #141924;
-  --surface: #1c2333;
-  --surface-hover: #232c40;
-  --border: #2e3a4a;
-  --border-hover: #3c4d63;
-  --text: #e8edf4;
-  --text-muted: #8b95a5;
-  --accent: #22d3ee;
-  --accent-strong: #06b6d4;
-  --accent-dim: rgba(34, 211, 238, 0.14);
-  --accent-glow: rgba(34, 211, 238, 0.16);
-  --accent-border: rgba(34, 211, 238, 0.45);
-  --grid-line: rgba(34, 211, 238, 0.5);
+  --bg: #0c0e12;
+  --bg-alt: #15181f;
+  --surface: #1b1f28;
+  --surface-hover: #242a35;
+  --border: #2b303b;
+  --border-hover: #3a414d;
+  --text: #edf1f7;
+  --text-muted: #9ba3b0;
+  --accent: #4fb3c8;
+  --accent-strong: #3790a6;
+  --accent-dim: rgba(79, 179, 200, 0.16);
+  --accent-glow: rgba(79, 179, 200, 0.14);
+  --accent-border: rgba(79, 179, 200, 0.4);
+  --grid-line: rgba(79, 179, 200, 0.33);
+  --on-accent: #0a2028;
   --recruiter-accent: #39ff14;
   --radius: 12px;
   --shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
@@ -203,6 +204,7 @@ a:hover {
 
 .btn:hover {
   background: var(--accent);
+  color: var(--on-accent);
   box-shadow: var(--shadow-glow);
   transform: translateY(-2px);
   text-decoration: none;
